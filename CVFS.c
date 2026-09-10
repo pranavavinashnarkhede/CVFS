@@ -318,7 +318,7 @@ void ManPageDisplay(char Name[])
         printf("About : It is used to terminate the project \n");
         printf("Usage : exit\n");
     }
-    else if(strcmp(Name , "ls") == 0)               // dont write dir here because it is virtual linux based project
+    else if(strcmp(Name , "ls") == 0)               
     {
         printf("About : It is used to list all files form current directory \n");
         printf("Usage : ls\n");
@@ -679,7 +679,7 @@ int unlink_file(
                 // Deallocate memory of Buffer
                 free(uareaobj.UFDT[i]->ptrinode->Buffer);
 
-                uareaobj.UFDT[i]->ptrinode->Buffer = NULL ;             // write NULL inside buffer 
+                uareaobj.UFDT[i]->ptrinode->Buffer = NULL ;             
 
                 strcpy(uareaobj.UFDT[i]->ptrinode->FileName , "\0");
 
@@ -697,7 +697,7 @@ int unlink_file(
 
                 free(uareaobj.UFDT[i]);
 
-                uareaobj.UFDT[i] = NULL ;           // place Null inside UFDT
+                uareaobj.UFDT[i] = NULL ;           
 
                 superobj.FreeInodes++;              // increase the free inode count
 
@@ -756,18 +756,17 @@ int write_file(
     }
 
     // kuthun pduh ilhaych
-    //offset = uareaobj.UFDT[fd]->ptrinode->Buffer + uareaobj.UFDT[fd]->WriteOffset ;           // manje buffer cha address + write offset kuthe aahe tithun pdhe write kara
+    //offset = uareaobj.UFDT[fd]->ptrinode->Buffer + uareaobj.UFDT[fd]->WriteOffset ;
 
     // Actual data writting
     strncpy(uareaobj.UFDT[fd]->ptrinode->Buffer + uareaobj.UFDT[fd]->WriteOffset , data , size);
 
     // update the write offset
 
-    uareaobj.UFDT[fd]->WriteOffset = uareaobj.UFDT[fd]->WriteOffset + size ;        // write offset chi value update kr, add jevdha hota tevdha + aata kiti data lihila te = write offset
-
+    uareaobj.UFDT[fd]->WriteOffset = uareaobj.UFDT[fd]->WriteOffset + size ;
     // update Actual file size      isum = isum + i -> like is 
 
-    uareaobj.UFDT[fd]->ptrinode->ActualFileSize = uareaobj.UFDT[fd]->ptrinode->ActualFileSize + size;       // file size pn tashich update kr
+    uareaobj.UFDT[fd]->ptrinode->ActualFileSize = uareaobj.UFDT[fd]->ptrinode->ActualFileSize + size;
 
 
     return size ;
@@ -1076,4 +1075,3 @@ int main()
 } // end of main
 
 
-// incomplete add backup
