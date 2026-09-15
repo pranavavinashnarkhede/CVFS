@@ -207,51 +207,62 @@ void InitialiseSuperBlock()
 
 int CreateDILB()
 {
-    PINODE temp = NULL ;
-    PINODE newn = NULL ;
-    
-    int i = 0 ;
+    PINODE temp = NULL;
+    PINODE newn = NULL;
+    PINODE current = NULL;
+    PINODE next = NULL;
 
-    temp = head ;
+    int i = 0;
 
-    for(i = 1 ; i <= MAXINODE ; i++)
+    temp = head;
+
+    for(i = 1; i <= MAXINODE; i++)
     {
         newn = (PINODE)malloc(sizeof(INODE));
 
         if(newn == NULL)
         {
+            // Deallocate already allocated inode nodes
+            current = head;
+
+            while(current != NULL)
+            {
+                next = current->next;
+                free(current);
+                current = next;
+            }
+
+            head = NULL;
+
             return ERR_INSUFFICIENT_SPACE;
         }
 
-        newn->InodeNumber = i ;
-        strcpy(newn->FileName , "\0");
-        newn->FileSize = 0 ; 
-        newn->ActualFileSize = 0 ;
-        newn->FileType = 0 ;
-        newn->ReferenceCount = 0 ;
-        newn->Permission = 0 ;
-        newn->Buffer = NULL ;
-        newn->next = NULL ;
+        newn->InodeNumber = i;
+        strcpy(newn->FileName, "\0");
+        newn->FileSize = 0;
+        newn->ActualFileSize = 0;
+        newn->FileType = 0;
+        newn->ReferenceCount = 0;
+        newn->Permission = 0;
+        newn->Buffer = NULL;
+        newn->next = NULL;
 
         if(temp == NULL)
         {
-            head = newn ;
-            temp = head ;
+            head = newn;
+            temp = head;
         }
         else
         {
-            temp->next = newn ;
-            temp = temp->next ;
-            
+            temp->next = newn;
+            temp = temp->next;
         }
     }
 
-    printf("Marvellous CVFS : DILD  gets created successfully\n");
+    printf("Marvellous CVFS : DILB gets created successfully\n");
 
     return EXECUTE_SUCCESS;
-
 }
- 
 
 /////////////////////////////////////////////////////////////////////////////////////
 //
@@ -407,12 +418,17 @@ void ManPageDisplay(char Name[])
         printf("Mode : Write -> 2\n");
         printf("Mode : Read + Write -> 3\n");
     }
+    else if(strcmp(Name , "close") == 0)
+    {
+        printf("About : It is used to close an opened file.\n");
+        printf("Usage : close File_Descriptor\n");
+
+        printf("File_Descriptor : Descriptor of file that we want to close\n");
+    }
     else
     {
         printf("No manual entry found for %s\n",Name);
     }
-
-
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -488,6 +504,11 @@ int CreateFile(
         return ERR_FILE_ALREADY_EXISTS;
     }
 
+    if(strlen(name) >= 20)
+    {
+        return ERR_INVALID_PARAMETER ;
+    }
+
     // if control here means every thing is ok
     // search for empty inode
 
@@ -511,7 +532,7 @@ int CreateFile(
     }
 
     // search empty UFDT entry 
-    for(i = 3 ; i < MAXINODE ; i++)
+    for(i = 3 ; i < MAXOPENFILES ; i++)
     {
         if(uareaobj.UFDT[i] == NULL)
         {
@@ -544,7 +565,7 @@ int CreateFile(
     uareaobj.UFDT[i]->ptrinode = temp ;
 
     // initialize all members of inode
-    strcpy(uareaobj.UFDT[i]->ptrinode->FileName , name);
+    temp->FileName[0] = '\0';
 
     uareaobj.UFDT[i]->ptrinode->FileSize = MAXFILESIZE ;
 
@@ -571,6 +592,7 @@ int CreateFile(
         temp->FileType = 0;
         temp->ReferenceCount = 0;
         temp->Permission = 0;
+        temp->Buffer = NULL ;
 
         return ERR_INSUFFICIENT_SPACE;
     }
@@ -737,50 +759,51 @@ int unlink_file(
                     char name[]         // name of file
                 )
 {
-    int i = 0 ;
 
+    PINODE temp = NULL ;
+    
     if(IsFileExists(name) == false)
     {
         return ERR_FILE_NOT_EXISTS ;
     }
 
-    // Travel the UFDT
+    temp = head;
 
-    for(i = 0 ; i < MAXOPENFILES ; i++)
+    // Travel the inode list to find filename
+
+    while(temp != NULL)
     {
-        if(uareaobj.UFDT[i] != NULL)
+        if(strcmp(temp->FileName , name) == 0)
         {
-            if(strcmp(uareaobj.UFDT[i]->ptrinode->FileName,name) == 0)
+            if(temp->ReferenceCount == 0)
             {
-                // Deallocate memory of Buffer
-                free(uareaobj.UFDT[i]->ptrinode->Buffer);
-
-                uareaobj.UFDT[i]->ptrinode->Buffer = NULL ;             
-
-                strcpy(uareaobj.UFDT[i]->ptrinode->FileName , "\0");
-
-                uareaobj.UFDT[i]->ptrinode->FileSize = 0 ;
-
-                uareaobj.UFDT[i]->ptrinode->ActualFileSize = 0 ;
-
-                uareaobj.UFDT[i]->ptrinode->FileType = 0 ;
+                // FileName is a character array, so we write '\0' at index 0 to make the string empty.
                 
-                uareaobj.UFDT[i]->ptrinode->Permission = 0 ;
+                temp->FileName[0] = '\0';
 
-                uareaobj.UFDT[i]->ptrinode->ReferenceCount = 0 ;
+                temp->FileSize = 0 ;
+                
+                temp->ActualFileSize = 0 ;
 
-                // Deallocate memroy fo file table
+                temp->FileType = 0 ;
 
-                free(uareaobj.UFDT[i]);
+                temp->Permission = 0 ;
+                
+                free(temp->Buffer);
 
-                uareaobj.UFDT[i] = NULL ;           
+                temp->Buffer = NULL;
 
                 superobj.FreeInodes++;              // increase the free inode count
-
-
+            
                 break;      // IMPORTANT
             }
+            else
+            {
+                return ERR_PERMISSION_DENIED ;
+            }
         }// End of if
+
+        temp = temp->next ;
 
     } // End of for
 
@@ -994,6 +1017,84 @@ int openFile(char name[] , int mode)
 
 }
 
+/////////////////////////////////////////////////////////////////////////////////////
+//
+//  Function Name :     closeFile()
+//  Description   :     It is used to close an opened file.
+//  Input         :     File Descriptor
+//  Output        :     Success / Error code
+//  Author        :     Pranav Avinash Narkhede
+//  Date          :     16/09/2026
+//
+/////////////////////////////////////////////////////////////////////////////////////
+int closeFile(int fd)
+{
+    if(fd < 0 || fd >= MAXOPENFILES)
+    {
+        return ERR_INVALID_PARAMETER ;
+    }
+
+    if(uareaobj.UFDT[fd] != NULL)
+    {
+        uareaobj.UFDT[fd]->ptrinode->ReferenceCount--; 
+        free(uareaobj.UFDT[fd]);
+
+        uareaobj.UFDT[fd] = NULL ;
+    }
+    else
+    {
+        return ERR_FILE_NOT_EXISTS ;
+    }
+
+    return EXECUTE_SUCCESS;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+//
+//  Function Name :     DeallocateResources()
+//  Description   :     It is used to deallocate all the resources allocated
+//                      by the CVFS before terminating the program.
+//  Input         :     None
+//  Output        :     None
+//  Author        :     Pranav Avinash Narkhede
+//  Date          :     16/09/2026
+//
+/////////////////////////////////////////////////////////////////////////////////////
+void DeallocateResources()
+{
+    int i = 0;
+    PINODE temp = NULL;
+    PINODE next = NULL;
+
+    // Free FileTable structures
+    for(i = 0; i < MAXOPENFILES; i++)
+    {
+        if(uareaobj.UFDT[i] != NULL)
+        {
+            free(uareaobj.UFDT[i]);
+            uareaobj.UFDT[i] = NULL;
+        }
+    }
+
+    // Free inode buffers and inode structures
+    temp = head;
+
+    while(temp != NULL)
+    {
+        next = temp->next;
+
+        if(temp->Buffer != NULL)
+        {
+            free(temp->Buffer);
+            temp->Buffer = NULL;
+        }
+
+        free(temp);
+        temp = next;
+    }
+
+    head = NULL;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////
 //
@@ -1035,26 +1136,29 @@ int main()
     // Infinite Listening Shell
     while(1)
     {
-        fflush(stdin);
-
         strcpy(str , "");
 
         printf("\nMarvellous CVFS : > ");
         fgets(str , sizeof(str) , stdin);
 
-        iCount = sscanf(str , "%s %s %s %s %s",Command[0] , Command[1] , Command[2] , Command[3] , Command[4] );            
+        // %19s read only 19 characters and add \0 at the end automatically
+        iCount = sscanf(str , "%19s %19s %19s %19s %19s",Command[0] , Command[1] , Command[2] , Command[3] , Command[4] );   
 
         fflush(stdin);
 
         if(iCount == 1)
         {
             // Marvellous CVFS : > exit
-           if(strcmp(Command[0] , "exit") == 0)
-           {
-                printf("Thank you for using Marvellous CVFS\n");
-                printf("Deallocating all resources of Marvellous CVFS\n");
-                break;              
-           }
+           if(strcmp(Command[0],"exit") == 0)
+            {
+                printf("Marvellous CVFS : Deallocating all resources...\n");
+
+                DeallocateResources();
+
+                printf("Marvellous CVFS : All resources deallocated successfully\n");
+
+                break;
+            }
             // Marvellous CVFS : > help
            else if(strcmp(Command[0] , "help") == 0)
            {
@@ -1115,6 +1219,14 @@ int main()
                 {
                     printf("Error : File not exist\n");
                 }
+                else if(iRet == ERR_PERMISSION_DENIED)
+                {
+                    printf("Error : File is currently opened\n");
+                }
+                else
+                {
+                    printf("File unlinked successfully\n");
+                }
             }
             // Marvellous CVFS : > write 1         1 -> fd
             else if(strcmp(Command[0] , "write") == 0)
@@ -1147,6 +1259,23 @@ int main()
                 else
                 {
                     printf("%d bytes gets successfully written into the file\n",iRet);
+                }
+            }
+            else if(strcmp(Command[0], "close") == 0)
+            {
+                iRet = closeFile(atoi(Command[1]));
+
+                if(iRet == ERR_INVALID_PARAMETER)
+                {
+                    printf("Error : Invalid File Descriptor\n");
+                }
+                else if(iRet == ERR_FILE_NOT_EXISTS)
+                {
+                    printf("Error : File is not opened\n");
+                }
+                else
+                {
+                    printf("File closed successfully\n");
                 }
             }
             else
@@ -1197,37 +1326,52 @@ int main()
             // Marvellous CVFS : > read 3 10
             else if(strcmp(Command[0] , "read") == 0)
             {
-                EmptyBuffer = (char *)malloc(atoi(Command[2]));
+                iSize = atoi(Command[2]);
 
-                iRet = read_file(atoi(Command[1]) ,EmptyBuffer, atoi(Command[2])+1); // we add 1 in size because %s stops when if found first \0.
+                EmptyBuffer = (char *)malloc(iSize+1);
 
-                if(iRet == ERR_INVALID_PARAMETER)
+                if(EmptyBuffer == NULL)
                 {
-                    printf("Error : Invalid Parameter\n");
-                }
-                else if(iRet == 0)
-                {
-                    printf("End of the file reached\n");
-                    free(EmptyBuffer);
-                    EmptyBuffer = NULL;
-                }
-                else if(iRet == ERR_FILE_NOT_EXISTS)
-                {
-                    printf("Error : File not exists\n");
-                }
-                else if(iRet == ERR_PERMISSION_DENIED)
-                {
-                    printf("Error : Permission denied\n");
+                    printf("ERROR : Unable to allocate memeory\n");
                 }
                 else
                 {
-                    EmptyBuffer[iRet] = '\0';       // adding \0 at the end with not allow garbage value
-                    printf("Read operation is successful\n");
-                    printf("Data from file is : \n");
-                    printf("%s\n",EmptyBuffer);
-                    free(EmptyBuffer);              // because its task is over
+                    iRet = read_file(atoi(Command[1]) ,EmptyBuffer, iSize);
+
+                    if(iRet == ERR_INVALID_PARAMETER)
+                    {
+                        free(EmptyBuffer);
+                        printf("Error : Invalid Parameter\n");
+                    }
+                    else if(iRet >= 0)
+                    {
+                        printf("End of the file reached\n");
+                        free(EmptyBuffer);
+                        EmptyBuffer = NULL;
+                    }
+                    else if(iRet == ERR_FILE_NOT_EXISTS)
+                    {
+                        free(EmptyBuffer);
+                        printf("Error : File not exists\n");
+                    }
+                    else if(iRet == ERR_PERMISSION_DENIED)
+                    {
+                        free(EmptyBuffer);
+                        printf("Error : Permission denied\n");
+                    }
+                    else
+                    {
+                        EmptyBuffer[iRet] = '\0';       // adding \0 at the end with not allow garbage value
+                        printf("Read operation is successful\n");
+                        printf("Data from file is : \n");
+                        printf("%s\n",EmptyBuffer);
+                        free(EmptyBuffer);              // because its task is over
+                    }
+
                 }
+
             }
+            // open Demo.txt 3
             else if(strcmp(Command[0] , "open") == 0)
             {
                 //                filename      mode
