@@ -17,9 +17,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////////
 
-# define MAXINODE 5
+# define MAXINODE 20
 # define MAXFILESIZE 50
-# define MAXOPENFILES 5
+# define MAXOPENFILES 20
 
 # define READ 1
 # define WRITE 2
@@ -362,7 +362,7 @@ void ManPageDisplay(char Name[])
         printf("About : It is used to display files available in Marvellous CVFS.\n");
         printf("Usage : ls\n");
         printf("Usage : ls -a\n");
-        printf("-a : It is used to display detailed information of all files.\n");
+        printf("-a : It is used to display detailed information of all files such as file name, inode number, actual file size, file type and permissions.\n");
     }
     else if(strcmp(Name, "creat") == 0)
     {
@@ -373,6 +373,10 @@ void ManPageDisplay(char Name[])
         printf("Permission : Read -> 1\n");
         printf("Permission : Write -> 2\n");
         printf("Permission : Read + Write -> 3\n");
+        printf("Permission : Execute -> 4\n");
+        printf("Permission : Read + Execute -> 5\n");
+        printf("Permission : Write + Execute -> 6\n");
+        printf("Permission : Read + Write + Execute -> 7\n");
     }
     else if(strcmp(Name, "open") == 0)
     {
@@ -522,12 +526,15 @@ int CreateFile(
         return ERR_NO_INODES ;
     }
     
-    // if permission value is wrong 
     // permission = 1 -> read
     // permission = 2 -> write
     // permission = 3 -> read + write
+    // permission = 4 -> execute
+    // permission = 5 -> read + execute
+    // permission = 6 -> write + execute
+    // permission = 7 -> read + write + execute
 
-    if(permission < 1 || permission > 3)
+    if(permission < 1 || permission > 7)
     {
         return ERR_INVALID_PARAMETER;
     }
@@ -672,27 +679,97 @@ void LsFile()
 //  Input         :     None
 //  Output        :     None
 //  Author        :     Pranav Avinash Narkhede
-//  Date          :     02/08/2026
+//  Date          :     16/09/2026
 //
 ////////////////////////////////////////////////////////////////////////////////////
 
 void LsFile_All()
 {
     PINODE temp = head ;
+    int iCount = 0 ;
+    int file_permission = 0 ;
+
+    char filetype[20] = {'\0'};
+    char permission[4] = {'\0'};
+
 
     printf("---------------------------------------------------------------------\n");
     printf("----------------- Marvellous CVFS Files Information ------------------\n");
     printf("---------------------------------------------------------------------\n");
 
+    printf("---------------------------------------------------------------------\n");
+    printf("%-20s %-10s %-10s %-12s %-12s\n",
+        "File Name",
+        "Inode",
+        "Size",
+        "Type",
+        "Permission");
+    printf("---------------------------------------------------------------------\n");
+
     while(temp != NULL)
     {
-        if(temp->FileType != 0)
+        if(strlen(temp->FileName) < 1)
         {
-            printf("%s %d %d \n",temp->FileName , temp->InodeNumber , temp->ActualFileSize);
-
+            break;  
         }
-        temp = temp->next;
+        if(temp->FileType == REGULARFILE)
+        {
+            strcpy(filetype , "Regular");
+        }
+        else
+        {
+            strcpy(filetype , "Special");
+        }
+        
+        file_permission = temp->Permission ;
+
+        if((file_permission & READ) == READ)
+        {
+            permission[0] = 'r';
+        }
+        else
+        {
+            permission[0] = '-';
+        }
+        
+        if((file_permission & WRITE) == WRITE)
+        {
+            permission[1] = 'w';
+        }
+        else
+        {
+            permission[1] = '-';
+        }
+
+        if((file_permission & EXECUTE) == EXECUTE)
+        {
+            permission[2] = 'x';
+        }
+        else
+        {
+            permission[2] = '-';
+        }
+
+        permission[3] = '\0';
+
+
+        printf("%-20s %-10d %-10d %-12s %-12s\n",
+       temp->FileName,
+       temp->InodeNumber,
+       temp->ActualFileSize,
+       filetype,
+       permission);
+
+       iCount++;
+
+       temp = temp->next ;
     }
+    
+    printf("---------------------------------------------------------------------\n");
+    printf("Total Files : %d\n" , iCount);
+    printf("Free Inodes : %d\n",superobj.FreeInodes);
+    printf("---------------------------------------------------------------------\n");
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -741,18 +818,22 @@ int stat_file(
 
             Permission = temp->Permission;
 
-            if(Permission == READ)
+            if((Permission & READ) == READ)
             {
-                printf("File Permission : READ Only\n");
+                printf("File Permission : READ ");
             }
-            else if(Permission == WRITE)
+
+            if((Permission & WRITE) == WRITE)
             {
-                printf("File Permission : WRITE\n");
+                printf("WRITE ");
             }
-            else if(Permission == READ + WRITE)
+
+            if((Permission & EXECUTE) == EXECUTE)
             {
-                printf("File Permission : READ + WRITE\n");
+                printf("EXECUTE ");
             }
+
+            printf("\n");
 
             Type = temp->FileType ;
 
@@ -1223,6 +1304,16 @@ int lseekFile(int fileDescriptor, int offset, int whence, int offsetType)
     return newOffset;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////
+//
+//  Function Name :     renameFile()
+//  Description   :     It is used to rename an existing file.
+//  Input         :     Old file name and New file name
+//  Output        :     Success / Error code
+//  Author        :     Pranav Avinash Narkhede
+//  Date          :     16/09/2026
+//
+/////////////////////////////////////////////////////////////////////////////////////
 int renameFile(char oldName[], char newName[])
 {
     PINODE temp = NULL ;
