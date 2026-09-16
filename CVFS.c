@@ -565,7 +565,7 @@ int CreateFile(
     uareaobj.UFDT[i]->ptrinode = temp ;
 
     // initialize all members of inode
-    temp->FileName[0] = '\0';
+    strcpy(temp->FileName, name);
 
     uareaobj.UFDT[i]->ptrinode->FileSize = MAXFILESIZE ;
 
@@ -916,6 +916,14 @@ int read_file(
         return ERR_PERMISSION_DENIED;
     }
 
+        printf("DEBUG : ReadOffset = %d\n",
+        uareaobj.UFDT[fd]->ReadOffset);
+
+    printf("DEBUG : ActualFileSize = %d\n",
+        uareaobj.UFDT[fd]->ptrinode->ActualFileSize);
+
+    printf("DEBUG : Requested Size = %d\n", size);
+
     remainingData = uareaobj.UFDT[fd]->ptrinode->ActualFileSize - uareaobj.UFDT[fd]->ReadOffset ;
 
     if(size > remainingData)
@@ -1094,6 +1102,87 @@ void DeallocateResources()
     }
 
     head = NULL;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+//
+//  Function Name :     lseekFile()
+//  Description   :     It is used to change the read or write offset of an
+//                      opened file based on the specified position.
+//  Input         :     File Descriptor, Offset, Whence, Offset Type
+//  Output        :     New File Offset / Error Code
+//  Author        :     Pranav Avinash Narkhede
+//  Date          :     16/09/2026
+//
+/////////////////////////////////////////////////////////////////////////////////////
+
+int lseekFile(int fileDescriptor, int offset, int whence, int offsetType)
+{
+    int currentOffset = 0;
+    int newOffset = 0;
+
+    if(fileDescriptor < 0 || fileDescriptor >= MAXOPENFILES)
+    {
+        return ERR_INVALID_PARAMETER;
+    }
+
+    if(uareaobj.UFDT[fileDescriptor] == NULL)
+    {
+        return ERR_FILE_NOT_EXISTS;
+    }
+
+    if(whence < START || whence > END)
+    {
+        return ERR_INVALID_PARAMETER;
+    }
+
+    if(offsetType != READ && offsetType != WRITE)
+    {
+        return ERR_INVALID_PARAMETER;
+    }
+
+    // Get current offset
+    if(offsetType == READ)
+    {
+        currentOffset = uareaobj.UFDT[fileDescriptor]->ReadOffset;
+    }
+    else
+    {
+        currentOffset = uareaobj.UFDT[fileDescriptor]->WriteOffset;
+    }
+
+    // Calculate new offset
+    if(whence == START)
+    {
+        newOffset = offset;
+    }
+    else if(whence == CURRENT)
+    {
+        newOffset = currentOffset + offset;
+    }
+    else
+    {
+        newOffset =
+            uareaobj.UFDT[fileDescriptor]->ptrinode->ActualFileSize + offset;
+    }
+
+    // Offset cannot be negative
+    if(newOffset < 0)
+    {
+        return ERR_INVALID_PARAMETER;
+    }
+
+    // Update required offset
+    if(offsetType == READ)
+    {
+        uareaobj.UFDT[fileDescriptor]->ReadOffset = newOffset;
+    }
+    else
+    {
+        uareaobj.UFDT[fileDescriptor]->WriteOffset = newOffset;
+    }
+
+    return newOffset;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -1324,52 +1413,57 @@ int main()
                 
             }
             // Marvellous CVFS : > read 3 10
-            else if(strcmp(Command[0] , "read") == 0)
+            else if(strcmp(Command[0], "read") == 0)
             {
                 iSize = atoi(Command[2]);
 
-                EmptyBuffer = (char *)malloc(iSize+1);
+                EmptyBuffer = (char *)malloc(iSize + 1);
 
                 if(EmptyBuffer == NULL)
                 {
-                    printf("ERROR : Unable to allocate memeory\n");
+                    printf("ERROR : Unable to allocate memory\n");
                 }
                 else
                 {
-                    iRet = read_file(atoi(Command[1]) ,EmptyBuffer, iSize);
+                    iRet = read_file(atoi(Command[1]), EmptyBuffer, iSize);
 
                     if(iRet == ERR_INVALID_PARAMETER)
                     {
                         free(EmptyBuffer);
-                        printf("Error : Invalid Parameter\n");
-                    }
-                    else if(iRet >= 0)
-                    {
-                        printf("End of the file reached\n");
-                        free(EmptyBuffer);
                         EmptyBuffer = NULL;
+                        printf("Error : Invalid Parameter\n");
                     }
                     else if(iRet == ERR_FILE_NOT_EXISTS)
                     {
                         free(EmptyBuffer);
+                        EmptyBuffer = NULL;
                         printf("Error : File not exists\n");
                     }
                     else if(iRet == ERR_PERMISSION_DENIED)
                     {
                         free(EmptyBuffer);
+                        EmptyBuffer = NULL;
                         printf("Error : Permission denied\n");
+                    }
+                    else if(iRet == 0)
+                    {
+                        free(EmptyBuffer);
+                        EmptyBuffer = NULL;
+
+                        printf("End of the file reached\n");
                     }
                     else
                     {
-                        EmptyBuffer[iRet] = '\0';       // adding \0 at the end with not allow garbage value
+                        EmptyBuffer[iRet] = '\0';
+
                         printf("Read operation is successful\n");
                         printf("Data from file is : \n");
-                        printf("%s\n",EmptyBuffer);
-                        free(EmptyBuffer);              // because its task is over
+                        printf("%s\n", EmptyBuffer);
+
+                        free(EmptyBuffer);
+                        EmptyBuffer = NULL;
                     }
-
                 }
-
             }
             // open Demo.txt 3
             else if(strcmp(Command[0] , "open") == 0)
@@ -1418,6 +1512,73 @@ int main()
         {
             
         }
+
+        else if(iCount == 5)
+        {
+            if(strcmp(Command[0], "lseek") == 0)
+            {
+                int whence = -1;
+                int offsetType = -1;
+
+                // Check whence
+                if(strcmp(Command[3], "start") == 0)
+                {
+                    whence = START;
+                }
+                else if(strcmp(Command[3], "current") == 0)
+                {
+                    whence = CURRENT;
+                }
+                else if(strcmp(Command[3], "end") == 0)
+                {
+                    whence = END;
+                }
+                else
+                {
+                    printf("Error : Invalid whence\n");
+                }
+
+                // Check offset type
+                if(strcmp(Command[4], "read") == 0)
+                {
+                    offsetType = READ;
+                }
+                else if(strcmp(Command[4], "write") == 0)
+                {
+                    offsetType = WRITE;
+                }
+                else
+                {
+                    printf("Error : Invalid offset type\n");
+                }
+
+                // Call lseek only when both parameters are valid
+                if(whence != -1 && offsetType != -1)
+                {
+                    iRet = lseekFile(
+                                atoi(Command[1]),
+                                atoi(Command[2]),
+                                whence,
+                                offsetType
+                            );
+
+                    if(iRet == ERR_INVALID_PARAMETER)
+                    {
+                        printf("Error : Invalid parameter\n");
+                    }
+                    else if(iRet == ERR_FILE_NOT_EXISTS)
+                    {
+                        printf("Error : File is not opened\n");
+                    }
+                    else
+                    {
+                        printf("File offset changed successfully\n");
+                        printf("New Offset : %d\n", iRet);
+                    }
+                }
+            }
+        }
+        
         else
         {
             printf("Command not found\n");
