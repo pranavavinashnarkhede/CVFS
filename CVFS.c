@@ -306,130 +306,163 @@ int StartAuxillaryDataInitialisation()
 //
 ////////////////////////////////////////////////////////////////////////////////////
 
-void DisplayHelp()
-{
-    printf("---------------------------------------------------------------------\n");
-    printf("-------------------- Marvellous CVFS Help Page ----------------------\n");
-    printf("---------------------------------------------------------------------\n");  
-
-    printf("man : It is used to display the manual page\n");
-    printf("clear : It is used to clear the terminal screen\n");
-    printf("creat : It is used to create new regular file\n");
-    printf("open : It is used to open the regular file\n");
-    printf("close : It is used to close the regular file\n");
-    printf("write: It is used to write the data into the file\n");
-    printf("read : It is used to read the data from file\n");
-    printf("stat : It is used to display statistical inforamtion of file\n");
-    printf("unlink : It is used to delete the file\n");
-    printf("exit : It is used to terminate Marvellous CVFS\n");
-
-
-    printf("---------------------------------------------------------------------\n");  
-}
+void DisplayHelp() 
+{ 
+    printf("---------------------------------------------------------------------\n"); 
+    printf("-------------------- Marvellous CVFS Help Page ----------------------\n"); 
+    printf("---------------------------------------------------------------------\n"); 
+    printf("help : It is used to display the help page\n"); 
+    printf("man : It is used to display the manual page of a command\n"); 
+    printf("clear : It is used to clear the terminal screen\n"); 
+    printf("ls : It is used to list all files\n"); 
+    printf("creat : It is used to create a new regular file\n"); 
+    printf("open : It is used to open an existing file\n"); 
+    printf("close : It is used to close an opened file\n"); 
+    printf("write : It is used to write data into an opened file\n"); 
+    printf("read : It is used to read data from an opened file\n"); 
+    printf("stat : It is used to display information of a specific file\n"); 
+    printf("unlink : It is used to delete an existing file\n"); 
+    printf("rename : It is used to rename an existing file\n"); 
+    printf("lseek : It is used to change the read or write offset of an opened file\n"); 
+    printf("exit : It is used to terminate Marvellous CVFS\n"); 
+    printf("---------------------------------------------------------------------\n"); }
 
 
 /////////////////////////////////////////////////////////////////////////////////////
 //
-//  Function Name :     ManPageDisplay()   
-//  Description   :     It is used to display man page of specific command   
+//  Function Name :     ManPageDisplay()
+//  Description   :     It is used to display the manual page of a specific command.
 //  Input         :     Name of command
+//  Output        :     None
 //  Author        :     Pranav Avinash Narkhede
-//  Date          :     01/08/2026
+//  Date          :     16/09/2026
 //
 ////////////////////////////////////////////////////////////////////////////////////
 
 void ManPageDisplay(char Name[])
 {
-
-    if(strcmp(Name , "exit") == 0)// expand latter
+    if(strcmp(Name, "help") == 0)
     {
-        printf("About : It is used to terminate the project \n");
-        printf("Usage : exit\n");
-    }
-    else if(strcmp(Name , "help") == 0)
-    {
-        printf("About : It is used to display the help page of CVFS.\n");
+        printf("About : It is used to display the help page of Marvellous CVFS.\n");
         printf("Usage : help\n");
     }
-    else if(strcmp(Name , "ls") == 0)
+    else if(strcmp(Name, "man") == 0)
     {
-        printf("About : It is used to list all files from current directory.\n");
+        printf("About : It is used to display the manual page of a specific command.\n");
+        printf("Usage : man Command_Name\n");
+        printf("Command_Name : Name of the command whose manual information is required.\n");
+    }
+    else if(strcmp(Name, "clear") == 0)
+    {
+        printf("About : It is used to clear the terminal screen.\n");
+        printf("Usage : clear\n");
+    }
+    else if(strcmp(Name, "ls") == 0)
+    {
+        printf("About : It is used to display files available in Marvellous CVFS.\n");
         printf("Usage : ls\n");
         printf("Usage : ls -a\n");
         printf("-a : It is used to display detailed information of all files.\n");
     }
-    else if(strcmp(Name , "clear") == 0)
+    else if(strcmp(Name, "creat") == 0)
     {
-        printf("About : It is used to clear the terminal.\n");
-        printf("Usage : clear\n");
-    }
-    else if(strcmp(Name , "creat") == 0)
-    {
-        printf("About : It is used to create new file.\n");
+        printf("About : It is used to create a new regular file.\n");
         printf("Usage : creat File_Name Permission\n");
-
-        printf("File_Name : Name of file that we want to create\n");
-        printf("Permission : Permission of the new file\n");
-
+        printf("File_Name : Name of the file that we want to create.\n");
+        printf("Permission : Permission assigned to the newly created file.\n");
         printf("Permission : Read -> 1\n");
         printf("Permission : Write -> 2\n");
         printf("Permission : Read + Write -> 3\n");
     }
-    else if(strcmp(Name , "unlink") == 0)
+    else if(strcmp(Name, "open") == 0)
     {
-        printf("About : It is used to delete existing file.\n");
-        printf("Usage : unlink File_Name\n");
-
-        printf("File_Name : Name of file that we want to delete\n");
-    }
-    else if(strcmp(Name , "stat") == 0)
-    {
-        printf("About : It is used to get information of file.\n");
-        printf("Usage : stat File_Name\n");
-
-        printf("File_Name : Name of file whose information should be fetched\n");
-    }
-    else if(strcmp(Name , "write") == 0)
-    {
-        printf("About : It is used to write data into an opened file.\n");
-        printf("Usage : write File_Descriptor\n");
-
-        printf("File_Descriptor : Descriptor of file in which data should be written\n");
-        printf("Note : File must have WRITE permission.\n");
-    }
-    else if(strcmp(Name , "read") == 0)
-    {
-        printf("About : It is used to read data from an opened file.\n");
-        printf("Usage : read File_Descriptor Size\n");
-
-        printf("File_Descriptor : Descriptor of file from which data should be read\n");
-        printf("Size : Number of bytes to read from the file\n");
-        printf("Note : File must have READ permission.\n");
-    }
-    else if(strcmp(Name , "open") == 0)
-    {
-        printf("About : It is used to open an existing file.\n");
+        printf("About : It is used to open an existing file in the specified mode.\n");
         printf("Usage : open File_Name Mode\n");
-
-        printf("File_Name : Name of file that we want to open\n");
-        printf("Mode : Access mode in which the file should be opened\n");
-
+        printf("File_Name : Name of the file that we want to open.\n");
+        printf("Mode : Access mode in which the file should be opened.\n");
         printf("Mode : Read -> 1\n");
         printf("Mode : Write -> 2\n");
         printf("Mode : Read + Write -> 3\n");
+        printf("Output : Returns a File Descriptor for the opened file.\n");
     }
-    else if(strcmp(Name , "close") == 0)
+    else if(strcmp(Name, "close") == 0)
     {
         printf("About : It is used to close an opened file.\n");
         printf("Usage : close File_Descriptor\n");
-
-        printf("File_Descriptor : Descriptor of file that we want to close\n");
+        printf("File_Descriptor : Descriptor of the file that we want to close.\n");
+    }
+    else if(strcmp(Name, "write") == 0)
+    {
+        printf("About : It is used to write data into an opened file.\n");
+        printf("Usage : write File_Descriptor\n");
+        printf("File_Descriptor : Descriptor of the file in which data should be written.\n");
+        printf("Note : After executing the command, enter the data to be written.\n");
+        printf("Note : File must have WRITE permission.\n");
+        printf("Output : Returns the number of bytes successfully written.\n");
+    }
+    else if(strcmp(Name, "read") == 0)
+    {
+        printf("About : It is used to read data from an opened file.\n");
+        printf("Usage : read File_Descriptor Size\n");
+        printf("File_Descriptor : Descriptor of the file from which data should be read.\n");
+        printf("Size : Number of bytes to read from the file.\n");
+        printf("Note : File must have READ permission.\n");
+        printf("Output : Returns the number of bytes successfully read.\n");
+    }
+    else if(strcmp(Name, "stat") == 0)
+    {
+        printf("About : It is used to display statistical information of a file.\n");
+        printf("Usage : stat File_Name\n");
+        printf("File_Name : Name of the file whose information should be displayed.\n");
+        printf("Information : File Name, Inode Number, File Size, Actual File Size,\n");
+        printf("              Reference Count, File Permission and File Type.\n");
+    }
+    else if(strcmp(Name, "unlink") == 0)
+    {
+        printf("About : It is used to delete an existing file.\n");
+        printf("Usage : unlink File_Name\n");
+        printf("File_Name : Name of the file that we want to delete.\n");
+        printf("Note : File must not be currently opened.\n");
+    }
+    else if(strcmp(Name, "rename") == 0)
+    {
+        printf("About : It is used to rename an existing file.\n");
+        printf("Usage : rename Old_File_Name New_File_Name\n");
+        printf("Old_File_Name : Current name of the file.\n");
+        printf("New_File_Name : New name that should be assigned to the file.\n");
+        printf("Note : New file name must not already exist.\n");
+        printf("Note : Maximum file name length is 19 characters.\n");
+    }
+    else if(strcmp(Name, "lseek") == 0)
+    {
+        printf("About : It is used to change the read or write offset of an opened file.\n");
+        printf("Usage : lseek File_Descriptor Offset Whence Offset_Type\n");
+        printf("File_Descriptor : Descriptor of the opened file.\n");
+        printf("Offset : Number of positions by which the offset should be changed.\n");
+        printf("Whence : Position from which the offset calculation should start.\n");
+        printf("Offset_Type : Specifies whether read or write offset should be changed.\n");
+        printf("Whence : start   -> Offset is calculated from beginning of file.\n");
+        printf("Whence : current -> Offset is calculated from current offset.\n");
+        printf("Whence : end     -> Offset is calculated from end of actual file data.\n");
+        printf("Offset_Type : read  -> Changes ReadOffset.\n");
+        printf("Offset_Type : write -> Changes WriteOffset.\n");
+        printf("Example : lseek 3 5 start read\n");
+        printf("Example : lseek 3 -2 current read\n");
+        printf("Example : lseek 3 -3 end read\n");
+    }
+    else if(strcmp(Name, "exit") == 0)
+    {
+        printf("About : It is used to terminate Marvellous CVFS.\n");
+        printf("Usage : exit\n");
+        printf("Note : All allocated resources are deallocated before termination.\n");
     }
     else
     {
-        printf("No manual entry found for %s\n",Name);
+        printf("No manual entry found for %s\n", Name);
+        printf("Please use help command to view available commands.\n");
     }
 }
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 //
@@ -924,6 +957,11 @@ int read_file(
 
     printf("DEBUG : Requested Size = %d\n", size);
 
+    if(uareaobj.UFDT[fd]->ReadOffset >= uareaobj.UFDT[fd]->ptrinode->ActualFileSize)
+    {
+        return 0;
+    }
+
     remainingData = uareaobj.UFDT[fd]->ptrinode->ActualFileSize - uareaobj.UFDT[fd]->ReadOffset ;
 
     if(size > remainingData)
@@ -1185,6 +1223,54 @@ int lseekFile(int fileDescriptor, int offset, int whence, int offsetType)
     return newOffset;
 }
 
+int renameFile(char oldName[], char newName[])
+{
+    PINODE temp = NULL ;
+
+    if((strlen(oldName) <= 0 || strlen(oldName) >= 20) || (strlen(newName) <= 0 || strlen(newName) >= 20))
+    {
+        return ERR_INVALID_PARAMETER ;
+    }
+
+    temp = head ;
+
+    while(temp != NULL)
+    {
+        if(strcmp(temp->FileName , newName) == 0)
+        {
+            break;
+        }
+
+        temp = temp->next ;
+    }
+
+    if(temp != NULL)
+    {
+        return ERR_FILE_ALREADY_EXISTS ;
+    }
+
+    temp = head ;
+
+    while(temp != NULL)
+    {
+        if(strcmp(temp->FileName , oldName) == 0)
+        {
+            break;
+        }
+
+        temp = temp->next;
+    }
+
+    if(temp == NULL)
+    {
+        return ERR_FILE_NOT_EXISTS ;
+    }
+
+    strcpy(temp->FileName , newName);
+
+    return EXECUTE_SUCCESS ;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////
 //
 //  Entry Point Function of the CVFS Project
@@ -1232,8 +1318,6 @@ int main()
 
         // %19s read only 19 characters and add \0 at the end automatically
         iCount = sscanf(str , "%19s %19s %19s %19s %19s",Command[0] , Command[1] , Command[2] , Command[3] , Command[4] );   
-
-        fflush(stdin);
 
         if(iCount == 1)
         {
@@ -1500,6 +1584,29 @@ int main()
                     printf("File opened successfully with fd : %d\n",iRet);
                 }
             }
+            
+            else if(strcmp(Command[0], "rename") == 0)
+            {
+                iRet = renameFile(Command[1], Command[2]);
+
+                if(iRet == ERR_INVALID_PARAMETER)
+                {
+                    printf("Error : Invalid Parameter\n");
+                }
+                else if(iRet == ERR_FILE_ALREADY_EXISTS)
+                {
+                    printf("Error : File already exists\n");
+                }
+                else if(iRet == ERR_FILE_NOT_EXISTS)
+                {
+                    printf("Error : File not exists\n");
+                }
+                else if(iRet == EXECUTE_SUCCESS)
+                {
+                    printf("File renamed successfully\n");
+                }
+            }
+        
             else
             {
                 printf("Command not found\n");
