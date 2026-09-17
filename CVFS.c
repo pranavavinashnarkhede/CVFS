@@ -56,6 +56,8 @@
 
 # define ERR_MAX_FILES_OPEN -8
 
+# define ERR_INVALID_SIZE -9
+
 /////////////////////////////////////////////////////////////////////////////////////
 //
 //  Structure Name :    Boot Block
@@ -323,7 +325,8 @@ void DisplayHelp()
     printf("stat : It is used to display information of a specific file\n"); 
     printf("unlink : It is used to delete an existing file\n"); 
     printf("rename : It is used to rename an existing file\n"); 
-    printf("lseek : It is used to change the read or write offset of an opened file\n"); 
+    printf("lseek : It is used to change the read or write offset of an opened file\n");
+    printf("\ttruncate\t\t: Truncate an existing file\n"); 
     printf("exit : It is used to terminate Marvellous CVFS\n"); 
     printf("---------------------------------------------------------------------\n"); }
 
@@ -343,127 +346,121 @@ void ManPageDisplay(char Name[])
 {
     if(strcmp(Name, "help") == 0)
     {
-        printf("About : It is used to display the help page of Marvellous CVFS.\n");
-        printf("Usage : help\n");
+        printf("\nHELP\n");
+        printf("About  : Display all available CVFS commands.\n");
+        printf("Usage  : help\n");
     }
     else if(strcmp(Name, "man") == 0)
     {
-        printf("About : It is used to display the manual page of a specific command.\n");
-        printf("Usage : man Command_Name\n");
-        printf("Command_Name : Name of the command whose manual information is required.\n");
+        printf("\nMAN\n");
+        printf("About  : Display manual information for a command.\n");
+        printf("Usage  : man Command_Name\n");
     }
     else if(strcmp(Name, "clear") == 0)
     {
-        printf("About : It is used to clear the terminal screen.\n");
-        printf("Usage : clear\n");
+        printf("\nCLEAR\n");
+        printf("About  : Clear the terminal screen.\n");
+        printf("Usage  : clear\n");
     }
     else if(strcmp(Name, "ls") == 0)
     {
-        printf("About : It is used to display files available in Marvellous CVFS.\n");
-        printf("Usage : ls\n");
-        printf("Usage : ls -a\n");
-        printf("-a : It is used to display detailed information of all files such as file name, inode number, actual file size, file type and permissions.\n");
+        printf("\nLS\n");
+        printf("About  : Display files available in CVFS.\n");
+        printf("Usage  : ls\n");
+        printf("Usage  : ls -a\n");
+        printf("ls -a  : Display detailed file information.\n");
     }
     else if(strcmp(Name, "creat") == 0)
     {
-        printf("About : It is used to create a new regular file.\n");
-        printf("Usage : creat File_Name Permission\n");
-        printf("File_Name : Name of the file that we want to create.\n");
-        printf("Permission : Permission assigned to the newly created file.\n");
-        printf("Permission : Read -> 1\n");
-        printf("Permission : Write -> 2\n");
-        printf("Permission : Read + Write -> 3\n");
-        printf("Permission : Execute -> 4\n");
-        printf("Permission : Read + Execute -> 5\n");
-        printf("Permission : Write + Execute -> 6\n");
-        printf("Permission : Read + Write + Execute -> 7\n");
+        printf("\nCREAT\n");
+        printf("About  : Create a new regular file.\n");
+        printf("Usage  : creat File_Name Permission\n");
+        printf("Permission:\n");
+        printf("  1 : Read\n");
+        printf("  2 : Write\n");
+        printf("  3 : Read + Write\n");
+        printf("  4 : Execute\n");
+        printf("  5 : Read + Execute\n");
+        printf("  6 : Write + Execute\n");
+        printf("  7 : Read + Write + Execute\n");
     }
     else if(strcmp(Name, "open") == 0)
     {
-        printf("About : It is used to open an existing file in the specified mode.\n");
-        printf("Usage : open File_Name Mode\n");
-        printf("File_Name : Name of the file that we want to open.\n");
-        printf("Mode : Access mode in which the file should be opened.\n");
-        printf("Mode : Read -> 1\n");
-        printf("Mode : Write -> 2\n");
-        printf("Mode : Read + Write -> 3\n");
-        printf("Output : Returns a File Descriptor for the opened file.\n");
+        printf("\nOPEN\n");
+        printf("About  : Open an existing file.\n");
+        printf("Usage  : open File_Name Mode\n");
+        printf("Mode:\n");
+        printf("  1 : Read\n");
+        printf("  2 : Write\n");
+        printf("  3 : Read + Write\n");
     }
     else if(strcmp(Name, "close") == 0)
     {
-        printf("About : It is used to close an opened file.\n");
-        printf("Usage : close File_Descriptor\n");
-        printf("File_Descriptor : Descriptor of the file that we want to close.\n");
+        printf("\nCLOSE\n");
+        printf("About  : Close an opened file.\n");
+        printf("Usage  : close File_Descriptor\n");
     }
     else if(strcmp(Name, "write") == 0)
     {
-        printf("About : It is used to write data into an opened file.\n");
-        printf("Usage : write File_Descriptor\n");
-        printf("File_Descriptor : Descriptor of the file in which data should be written.\n");
-        printf("Note : After executing the command, enter the data to be written.\n");
-        printf("Note : File must have WRITE permission.\n");
-        printf("Output : Returns the number of bytes successfully written.\n");
+        printf("\nWRITE\n");
+        printf("About  : Write data into an opened file.\n");
+        printf("Usage  : write File_Descriptor\n");
+        printf("Note   : File must have WRITE permission.\n");
     }
     else if(strcmp(Name, "read") == 0)
     {
-        printf("About : It is used to read data from an opened file.\n");
-        printf("Usage : read File_Descriptor Size\n");
-        printf("File_Descriptor : Descriptor of the file from which data should be read.\n");
-        printf("Size : Number of bytes to read from the file.\n");
-        printf("Note : File must have READ permission.\n");
-        printf("Output : Returns the number of bytes successfully read.\n");
+        printf("\nREAD\n");
+        printf("About  : Read data from an opened file.\n");
+        printf("Usage  : read File_Descriptor Size\n");
+        printf("Note   : File must have READ permission.\n");
     }
     else if(strcmp(Name, "stat") == 0)
     {
-        printf("About : It is used to display statistical information of a file.\n");
-        printf("Usage : stat File_Name\n");
-        printf("File_Name : Name of the file whose information should be displayed.\n");
-        printf("Information : File Name, Inode Number, File Size, Actual File Size,\n");
-        printf("              Reference Count, File Permission and File Type.\n");
+        printf("\nSTAT\n");
+        printf("About  : Display information about a file.\n");
+        printf("Usage  : stat File_Name\n");
+        printf("Shows  : File name, inode, size, permissions and type.\n");
     }
     else if(strcmp(Name, "unlink") == 0)
     {
-        printf("About : It is used to delete an existing file.\n");
-        printf("Usage : unlink File_Name\n");
-        printf("File_Name : Name of the file that we want to delete.\n");
-        printf("Note : File must not be currently opened.\n");
+        printf("\nUNLINK\n");
+        printf("About  : Delete an existing file.\n");
+        printf("Usage  : unlink File_Name\n");
+        printf("Note   : File must not be opened.\n");
     }
     else if(strcmp(Name, "rename") == 0)
     {
-        printf("About : It is used to rename an existing file.\n");
-        printf("Usage : rename Old_File_Name New_File_Name\n");
-        printf("Old_File_Name : Current name of the file.\n");
-        printf("New_File_Name : New name that should be assigned to the file.\n");
-        printf("Note : New file name must not already exist.\n");
-        printf("Note : Maximum file name length is 19 characters.\n");
+        printf("\nRENAME\n");
+        printf("About  : Rename an existing file.\n");
+        printf("Usage  : rename Old_File_Name New_File_Name\n");
     }
     else if(strcmp(Name, "lseek") == 0)
     {
-        printf("About : It is used to change the read or write offset of an opened file.\n");
-        printf("Usage : lseek File_Descriptor Offset Whence Offset_Type\n");
-        printf("File_Descriptor : Descriptor of the opened file.\n");
-        printf("Offset : Number of positions by which the offset should be changed.\n");
-        printf("Whence : Position from which the offset calculation should start.\n");
-        printf("Offset_Type : Specifies whether read or write offset should be changed.\n");
-        printf("Whence : start   -> Offset is calculated from beginning of file.\n");
-        printf("Whence : current -> Offset is calculated from current offset.\n");
-        printf("Whence : end     -> Offset is calculated from end of actual file data.\n");
-        printf("Offset_Type : read  -> Changes ReadOffset.\n");
-        printf("Offset_Type : write -> Changes WriteOffset.\n");
-        printf("Example : lseek 3 5 start read\n");
-        printf("Example : lseek 3 -2 current read\n");
-        printf("Example : lseek 3 -3 end read\n");
+        printf("\nLSEEK\n");
+        printf("About  : Change the read or write offset of an opened file.\n");
+        printf("Usage  : lseek File_Descriptor Offset Whence Offset_Type\n");
+        printf("Whence : start, current, end\n");
+        printf("Type   : read or write\n");
+        printf("Example: lseek 3 5 start read\n");
+    }
+    else if(strcmp(Name, "truncate") == 0)
+    {
+        printf("\nTRUNCATE\n");
+        printf("About  : Reduce the size of an existing file.\n");
+        printf("Usage  : truncate File_Name Size\n");
+        printf("Note   : New size must not be greater than current size.\n");
+        printf("Note   : File must have WRITE permission.\n");
+        printf("Example: truncate test.txt 10\n");
     }
     else if(strcmp(Name, "exit") == 0)
     {
-        printf("About : It is used to terminate Marvellous CVFS.\n");
-        printf("Usage : exit\n");
-        printf("Note : All allocated resources are deallocated before termination.\n");
+        printf("\nEXIT\n");
+        printf("About  : Terminate CVFS.\n");
+        printf("Usage  : exit\n");
     }
     else
     {
         printf("No manual entry found for %s\n", Name);
-        printf("Please use help command to view available commands.\n");
     }
 }
 
@@ -708,9 +705,10 @@ void LsFile_All()
 
     while(temp != NULL)
     {
-        if(strlen(temp->FileName) < 1)
+        if(strlen(temp->FileName) == 0)
         {
-            break;  
+            temp = temp->next ;
+            continue; 
         }
         if(temp->FileType == REGULARFILE)
         {
@@ -937,18 +935,11 @@ int unlink_file(
 //
 ////////////////////////////////////////////////////////////////////////////////////
 
-int write_file(
-                    int fd ,                
-                    char *data ,
-                    int size
-              )
+int write_file(int fd, char *arr, int size)
 {
+    int iRet = 0;
+    PINODE temp = NULL;
 
-    printf("File Descriptor : %d\n",fd);
-    printf("Data that we want to write : %s\n",data);
-    printf("Size of data : %d\n",size);
-
-    // if fd is invalid
     if(fd < 0 || fd >= MAXOPENFILES)
     {
         return ERR_INVALID_PARAMETER;
@@ -956,36 +947,44 @@ int write_file(
 
     if(uareaobj.UFDT[fd] == NULL)
     {
-        return ERR_FILE_NOT_EXISTS;
+        return ERR_INVALID_PARAMETER;
     }
 
-    // if writing permission is not there
-    if((uareaobj.UFDT[fd]->Mode & WRITE) != WRITE)
+    temp = uareaobj.UFDT[fd]->ptrinode;
+
+    // Check WRITE permission
+    if((temp->Permission & WRITE) != WRITE)
     {
         return ERR_PERMISSION_DENIED;
     }
 
-    // check the space is there or not 
+    // Check available space
     if((MAXFILESIZE - uareaobj.UFDT[fd]->WriteOffset) < size)
     {
         return ERR_INSUFFICIENT_SPACE;
     }
 
-    // kuthun pduh ilhaych
-    //offset = uareaobj.UFDT[fd]->ptrinode->Buffer + uareaobj.UFDT[fd]->WriteOffset ;
+    // Write data into buffer
+    strncpy(
+        temp->Buffer + uareaobj.UFDT[fd]->WriteOffset,
+        arr,
+        size
+    );
 
-    // Actual data writting
-    strncpy(uareaobj.UFDT[fd]->ptrinode->Buffer + uareaobj.UFDT[fd]->WriteOffset , data , size);
+    // Move write offset
+    uareaobj.UFDT[fd]->WriteOffset =
+        uareaobj.UFDT[fd]->WriteOffset + size;
 
-    // update the write offset
+    // Calculate new end position
+    iRet = uareaobj.UFDT[fd]->WriteOffset;
 
-    uareaobj.UFDT[fd]->WriteOffset = uareaobj.UFDT[fd]->WriteOffset + size ;
-    // update Actual file size      isum = isum + i -> like is 
+    // Update actual file size only if new end is greater
+    if(iRet > temp->ActualFileSize)
+    {
+        temp->ActualFileSize = iRet;
+    }
 
-    uareaobj.UFDT[fd]->ptrinode->ActualFileSize = uareaobj.UFDT[fd]->ptrinode->ActualFileSize + size;
-
-
-    return size ;
+    return size;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -999,65 +998,67 @@ int write_file(
 //
 ////////////////////////////////////////////////////////////////////////////////////
 
-int read_file(
-                    int fd,
-                    char *data ,
-                    int size                
-              )
+int read_file(int fd, char *arr, int size)
 {
-    int remainingData = 0 ;
+    int iRet = 0;
+    int remainingData = 0;
+    PINODE temp = NULL;
 
-    // Invalid fd
-
+    // Validate file descriptor
     if(fd < 0 || fd >= MAXOPENFILES)
     {
         return ERR_INVALID_PARAMETER;
     }
 
-    if(size < 0)
-    {
-        return ERR_INVALID_PARAMETER;
-    }
-
+    // Check whether file is opened
     if(uareaobj.UFDT[fd] == NULL)
     {
         return ERR_FILE_NOT_EXISTS;
     }
 
-    // Filter for permission
-    if((uareaobj.UFDT[fd]->Mode & READ) != READ)
+    // Validate size
+    if(size < 0)
+    {
+        return ERR_INVALID_PARAMETER;
+    }
+
+    temp = uareaobj.UFDT[fd]->ptrinode;
+
+    // Check READ permission
+    if((temp->Permission & READ) != READ)
     {
         return ERR_PERMISSION_DENIED;
     }
 
-        printf("DEBUG : ReadOffset = %d\n",
-        uareaobj.UFDT[fd]->ReadOffset);
-
-    printf("DEBUG : ActualFileSize = %d\n",
-        uareaobj.UFDT[fd]->ptrinode->ActualFileSize);
-
-    printf("DEBUG : Requested Size = %d\n", size);
-
-    if(uareaobj.UFDT[fd]->ReadOffset >= uareaobj.UFDT[fd]->ptrinode->ActualFileSize)
+    // Check whether read offset is at or beyond EOF
+    if(uareaobj.UFDT[fd]->ReadOffset >= temp->ActualFileSize)
     {
         return 0;
     }
 
-    remainingData = uareaobj.UFDT[fd]->ptrinode->ActualFileSize - uareaobj.UFDT[fd]->ReadOffset ;
+    // Calculate remaining data
+    remainingData = temp->ActualFileSize - uareaobj.UFDT[fd]->ReadOffset;
 
+    // If requested size is greater than remaining data,
+    // read only the available data
     if(size > remainingData)
     {
         size = remainingData;
     }
 
-    // read the data
-    strncpy(data , uareaobj.UFDT[fd]->ptrinode->Buffer + uareaobj.UFDT[fd]->ReadOffset , size);
+    // Copy data from file buffer
+    strncpy(arr, temp->Buffer + uareaobj.UFDT[fd]->ReadOffset, size );
 
-    uareaobj.UFDT[fd]->ReadOffset = uareaobj.UFDT[fd]->ReadOffset + size ; // update the read offset 
+    // Add string terminator
+    arr[size] = '\0';
 
-    return size ;
+    // Move read offset
+    uareaobj.UFDT[fd]->ReadOffset = uareaobj.UFDT[fd]->ReadOffset + size;
+
+    iRet = size;
+
+    return iRet;
 }
-
 /////////////////////////////////////////////////////////////////////////////////////
 //
 //  Function Name :     openFile()
@@ -1364,6 +1365,112 @@ int renameFile(char oldName[], char newName[])
 
 /////////////////////////////////////////////////////////////////////////////////////
 //
+//  Function Name :     truncateFile()
+//  Description   :     It is used to reduce the size of an existing file.
+//  Input         :     File name and new file size
+//  Output        :     Success / Error code
+//  Author        :     Pranav Avinash Narkhede
+//  Date          :     17/09/2026
+//
+/////////////////////////////////////////////////////////////////////////////////////
+
+int truncateFile(char FileName[], int Size)
+{
+    PINODE temp = NULL;
+    int i = 0;
+
+    temp = head;
+
+    // Validate size
+    if(Size < 0)
+    {
+        return ERR_INVALID_SIZE;
+    }
+
+    // Find the inode
+    while(temp != NULL)
+    {
+        if(strcmp(temp->FileName, FileName) == 0)
+        {
+            break;
+        }
+
+        temp = temp->next;
+    }
+
+    // File does not exist
+    if(temp == NULL)
+    {
+        return ERR_FILE_NOT_EXISTS;
+    }
+
+    // Cannot increase file size
+    if(Size > temp->ActualFileSize)
+    {
+        return ERR_INVALID_SIZE;
+    }
+
+    // Check WRITE permission
+    if((temp->Permission & WRITE) != WRITE)
+    {
+        return ERR_PERMISSION_DENIED;
+    }
+
+    // Set new file size
+    temp->ActualFileSize = Size;
+
+    // Adjust offsets of all opened file descriptors
+    for(i = 0; i < MAXOPENFILES; i++)
+    {
+        if(uareaobj.UFDT[i] != NULL && uareaobj.UFDT[i]->ptrinode == temp)
+        {
+            if(uareaobj.UFDT[i]->ReadOffset > Size)
+            {
+                uareaobj.UFDT[i]->ReadOffset = Size;
+            }
+
+            if(uareaobj.UFDT[i]->WriteOffset > Size)
+            {
+                uareaobj.UFDT[i]->WriteOffset = Size;
+            }
+        }
+    }
+
+    return EXECUTE_SUCCESS;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+//
+//  Function Name :     IsNumber()
+//  Description   :     It is used to check whether the given string contains
+//                      only numeric characters.
+//  Input         :     String
+//  Output        :     True if string contains only numbers
+//                      False if string contains non-numeric characters
+//  Author        :     Pranav Avinash Narkhede
+//  Date          :     17/09/2026
+//
+/////////////////////////////////////////////////////////////////////////////////////
+int IsNumber(char str[])
+{
+    int i = 0;
+
+    if(str[0] == '\0')
+        return 0;
+
+    while(str[i] != '\0')
+    {
+        if(str[i] < '0' || str[i] > '9')
+            return 0;
+
+        i++;
+    }
+
+    return 1;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+//
 //  Entry Point Function of the CVFS Project
 //
 ////////////////////////////////////////////////////////////////////////////////////
@@ -1495,6 +1602,12 @@ int main()
             // Marvellous CVFS : > write 1         1 -> fd
             else if(strcmp(Command[0] , "write") == 0)
             {
+                if(IsNumber(Command[1]) == 0)
+                {
+                    printf("Error : Invalid Number \n");
+                    continue;
+                }
+
                 printf("Enter the data that you want to write the file \n");
                 fgets(InputBufferr , MAXFILESIZE , stdin);
 
@@ -1525,8 +1638,15 @@ int main()
                     printf("%d bytes gets successfully written into the file\n",iRet);
                 }
             }
+               // close fd  
             else if(strcmp(Command[0], "close") == 0)
             {
+                if(IsNumber(Command[1]) == 0)
+                {
+                    printf("Error : Invalid Number \n");
+                    continue; 
+                }
+
                 iRet = closeFile(atoi(Command[1]));
 
                 if(iRet == ERR_INVALID_PARAMETER)
@@ -1556,6 +1676,13 @@ int main()
             // Marvellous CVFS : > creat Ganesh.txt 3
             if(strcmp(Command[0] , "creat") == 0)
             {
+
+                if(IsNumber(Command[2]) == 0)
+                {
+                    printf("Error : Invalid Number \n");
+                    continue;
+                }
+
                 iRet = CreateFile(Command[1] , atoi(Command[2]));               
 
                 if(iRet == ERR_NO_INODES)
@@ -1590,7 +1717,19 @@ int main()
             // Marvellous CVFS : > read 3 10
             else if(strcmp(Command[0], "read") == 0)
             {
+                if((IsNumber(Command[1]) == 0) || (IsNumber(Command[2]) == 0))
+                {
+                    printf("Error : Invalid Number \n");
+                    continue;
+                }
+
                 iSize = atoi(Command[2]);
+
+                if(iSize < 0 || iSize > MAXFILESIZE)
+                {
+                    printf("Error : Invalid file size\n");
+                    continue;
+                }
 
                 EmptyBuffer = (char *)malloc(iSize + 1);
 
@@ -1643,6 +1782,12 @@ int main()
             // open Demo.txt 3
             else if(strcmp(Command[0] , "open") == 0)
             {
+                if(IsNumber(Command[2]) == 0)
+                {
+                    printf("Error : Invalid Number \n");
+                    continue;
+                }
+
                 //                filename      mode
                 iRet = openFile(Command[1] , atoi(Command[2]));
 
@@ -1675,7 +1820,7 @@ int main()
                     printf("File opened successfully with fd : %d\n",iRet);
                 }
             }
-            
+            // rename oldname newname
             else if(strcmp(Command[0], "rename") == 0)
             {
                 iRet = renameFile(Command[1], Command[2]);
@@ -1697,7 +1842,34 @@ int main()
                     printf("File renamed successfully\n");
                 }
             }
-        
+            // truncate filename newsize
+            else if(strcmp(Command[0], "truncate") == 0)
+            {
+                if(IsNumber(Command[2]) == 0)
+                {
+                    printf("Error : Invalid Number \n");
+                    continue;
+                }
+
+                iRet = truncateFile(Command[1], atoi(Command[2]));
+
+                if(iRet == EXECUTE_SUCCESS)
+                {
+                    printf("File truncated successfully\n");
+                }
+                else if(iRet == ERR_FILE_NOT_EXISTS)
+                {
+                    printf("Error : File does not exist\n");
+                }
+                else if(iRet == ERR_INVALID_SIZE)
+                {
+                    printf("Error : Invalid size\n");
+                }
+                else if(iRet == ERR_PERMISSION_DENIED)
+                {
+                    printf("Error : Write permission denied\n");
+                }
+            }
             else
             {
                 printf("Command not found\n");
@@ -1705,16 +1877,16 @@ int main()
                 printf("Please refer manual page of command using man\n");
             }
         }
-        
-        else if(iCount == 4)
-        {
-            
-        }
-
         else if(iCount == 5)
-        {
+        {   // lseek fd offset position offset_type 
             if(strcmp(Command[0], "lseek") == 0)
             {
+                if((IsNumber(Command[1])) == 0 || (IsNumber(Command[2])) == 0)
+                {
+                    printf("Error : Invalid Number \n");
+                    continue;
+                }
+
                 int whence = -1;
                 int offsetType = -1;
 
@@ -1784,7 +1956,6 @@ int main()
             printf("Please refer manual page of command using man\n");
         }
     } // end of while
-
 
     return 0 ;
 } // end of main
