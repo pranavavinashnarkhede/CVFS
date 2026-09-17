@@ -207,63 +207,64 @@ void InitialiseSuperBlock()
 ////////////////////////////////////////////////////////////////////////////////////
 
 
-int CreateDILB()
-{
-    PINODE temp = NULL;
-    PINODE newn = NULL;
-    PINODE current = NULL;
-    PINODE next = NULL;
-
-    int i = 0;
-
-    temp = head;
-
-    for(i = 1; i <= MAXINODE; i++)
-    {
-        newn = (PINODE)malloc(sizeof(INODE));
-
-        if(newn == NULL)
-        {
-            // Deallocate already allocated inode nodes
-            current = head;
-
-            while(current != NULL)
-            {
-                next = current->next;
-                free(current);
-                current = next;
-            }
-
-            head = NULL;
-
-            return ERR_INSUFFICIENT_SPACE;
-        }
-
-        newn->InodeNumber = i;
-        strcpy(newn->FileName, "\0");
-        newn->FileSize = 0;
-        newn->ActualFileSize = 0;
-        newn->FileType = 0;
-        newn->ReferenceCount = 0;
-        newn->Permission = 0;
-        newn->Buffer = NULL;
-        newn->next = NULL;
-
-        if(temp == NULL)
-        {
-            head = newn;
-            temp = head;
-        }
-        else
-        {
-            temp->next = newn;
-            temp = temp->next;
-        }
-    }
-
-    printf("Marvellous CVFS : DILB gets created successfully\n");
-
-    return EXECUTE_SUCCESS;
+int CreateDILB() 
+{ 
+    PINODE temp = NULL; 
+    PINODE newn = NULL; 
+    PINODE current = NULL; 
+    PINODE next = NULL; 
+ 
+    int i = 0; 
+ 
+    temp = head; 
+ 
+    // Allocate and initialise all inode nodes
+    for(i = 1; i <= MAXINODE; i++) 
+    { 
+        newn = (PINODE)malloc(sizeof(INODE)); 
+ 
+        if(newn == NULL) 
+        { 
+            // Release previously allocated inode nodes
+            current = head; 
+ 
+            while(current != NULL) 
+            { 
+                next = current->next; 
+                free(current); 
+                current = next; 
+            } 
+ 
+            head = NULL; 
+ 
+            return ERR_INSUFFICIENT_SPACE; 
+        } 
+ 
+        newn->InodeNumber = i; 
+        strcpy(newn->FileName, "\0"); 
+        newn->FileSize = 0; 
+        newn->ActualFileSize = 0; 
+        newn->FileType = 0; 
+        newn->ReferenceCount = 0; 
+        newn->Permission = 0; 
+        newn->Buffer = NULL; 
+        newn->next = NULL; 
+ 
+        if(temp == NULL) 
+        { 
+            head = newn; 
+            temp = head; 
+        } 
+        else 
+        { 
+            temp->next = newn; 
+            temp = temp->next; 
+        } 
+    } 
+ 
+    printf("Marvellous CVFS : DILB gets created successfully\n"); 
+ 
+    return EXECUTE_SUCCESS; 
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -276,28 +277,32 @@ int CreateDILB()
 //
 ////////////////////////////////////////////////////////////////////////////////////
 
-int StartAuxillaryDataInitialisation()
-{
-    int iRet = 0 ;
-
-    strcpy(bootobj.Information , "Booting process of Marvellous CVFS is completed");
-
-    printf("%s\n",bootobj.Information);
-    
-    InitialiseUAREA();
-
-    InitialiseSuperBlock();
-
-    iRet = CreateDILB();
-
-    if(iRet == ERR_INSUFFICIENT_SPACE)
-    {
-        return ERR_INSUFFICIENT_SPACE;  
-    }
-
-    return EXECUTE_SUCCESS;
+int StartAuxillaryDataInitialisation() 
+{ 
+    int iRet = 0; 
+ 
+    // Set the boot completion message
+    strcpy(bootobj.Information, "Booting process of Marvellous CVFS is completed"); 
+ 
+    printf("%s\n", bootobj.Information); 
+     
+    // Initialise User Area
+    InitialiseUAREA(); 
+ 
+    // Initialise Super Block
+    InitialiseSuperBlock(); 
+ 
+    // Create and initialise the inode list
+    iRet = CreateDILB(); 
+ 
+    if(iRet == ERR_INSUFFICIENT_SPACE) 
+    { 
+        // Stop initialisation if inode allocation fails
+        return ERR_INSUFFICIENT_SPACE;   
+    } 
+ 
+    return EXECUTE_SUCCESS; 
 }
-
 /////////////////////////////////////////////////////////////////////////////////////
 //
 //  Function Name :     DisplayHelp()   
@@ -328,7 +333,8 @@ void DisplayHelp()
     printf("lseek : It is used to change the read or write offset of an opened file\n");
     printf("\ttruncate\t\t: Truncate an existing file\n"); 
     printf("exit : It is used to terminate Marvellous CVFS\n"); 
-    printf("---------------------------------------------------------------------\n"); }
+    printf("---------------------------------------------------------------------\n"); 
+}
 
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -479,23 +485,26 @@ void ManPageDisplay(char Name[])
 
 bool IsFileExists(
                         char name[]         // name of file
-                )
-{
-    PINODE temp = head ;
-    bool bFlag = false;
-
-    while(temp != NULL)
-    {
-        if(strcmp(temp->FileName ,name) == 0)
-        {
-            bFlag = true;
-            break;
-        }
-
-        temp = temp->next;
-    }
-
-    return bFlag;
+                ) 
+{ 
+    PINODE temp = head; 
+    bool bFlag = false; 
+ 
+    // Traverse the inode list to search for the given file name
+    while(temp != NULL) 
+    { 
+        if(strcmp(temp->FileName, name) == 0) 
+        { 
+            // File found in the inode list
+            bFlag = true; 
+            break; 
+        } 
+ 
+        // Move to the next inode
+        temp = temp->next; 
+    } 
+ 
+    return bFlag; 
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -511,18 +520,19 @@ bool IsFileExists(
 
 int CreateFile(
                     char name[] ,                   // Name of File 
-                    int permission                  // file permission
+                    int permission                  // File permission
                 )
 {
+    PINODE temp = head;
+    int i = 0;
 
-    PINODE temp = head ;
-    int i = 0 ;
-
+    // Check whether a free inode is available
     if(superobj.FreeInodes == 0)
     {
-        return ERR_NO_INODES ;
+        return ERR_NO_INODES;
     }
-    
+
+    // Validate the file permission
     // permission = 1 -> read
     // permission = 2 -> write
     // permission = 3 -> read + write
@@ -536,19 +546,19 @@ int CreateFile(
         return ERR_INVALID_PARAMETER;
     }
 
+    // Check whether a file with the same name already exists
     if(IsFileExists(name) == true)
     {
         return ERR_FILE_ALREADY_EXISTS;
     }
 
+    // Validate the file name length
     if(strlen(name) >= 20)
     {
-        return ERR_INVALID_PARAMETER ;
+        return ERR_INVALID_PARAMETER;
     }
 
-    // if control here means every thing is ok
-    // search for empty inode
-
+    // Search the inode list for a free inode
     while(temp != NULL)
     {
         if(temp->FileType == 0)
@@ -556,20 +566,17 @@ int CreateFile(
             break;
         }
 
-        temp = temp->next ;
+        temp = temp->next;
     }
 
-    // temp contains free inode address
-
-    // Rare case
-
+    // Check whether a free inode was found
     if(temp == NULL)
     {
         return ERR_NO_INODES;
     }
 
-    // search empty UFDT entry 
-    for(i = 3 ; i < MAXOPENFILES ; i++)
+    // Search the UFDT for a free file descriptor entry
+    for(i = 3; i < MAXOPENFILES; i++)
     {
         if(uareaobj.UFDT[i] == NULL)
         {
@@ -577,66 +584,63 @@ int CreateFile(
         }
     }
 
+    // Check whether all UFDT entries are occupied
     if(i == MAXOPENFILES)
     {
-        return ERR_MAX_FILES_OPEN ;
+        return ERR_MAX_FILES_OPEN;
     }
 
-    // allocate memeory for file table
-
+    // Allocate memory for the file table
     uareaobj.UFDT[i] = (PFILETABLE)malloc(sizeof(FILETABLE));
 
-    // check memory allocated or not
+    // Check whether file table memory was allocated successfully
     if(uareaobj.UFDT[i] == NULL)
     {
         return ERR_INSUFFICIENT_SPACE;
     }
 
-    // initialize file table
-    uareaobj.UFDT[i]->ReadOffset = 0 ;
-    uareaobj.UFDT[i]->WriteOffset = 0 ;
-    uareaobj.UFDT[i]->Mode = permission ;
-    
-    // connect File Table with the Inode
+    // Initialise the file table
+    uareaobj.UFDT[i]->ReadOffset = 0;
+    uareaobj.UFDT[i]->WriteOffset = 0;
+    uareaobj.UFDT[i]->Mode = permission;
 
-    uareaobj.UFDT[i]->ptrinode = temp ;
+    // Link the file table with the allocated inode
+    uareaobj.UFDT[i]->ptrinode = temp;
 
-    // initialize all members of inode
+    // Initialise the inode information
     strcpy(temp->FileName, name);
 
-    uareaobj.UFDT[i]->ptrinode->FileSize = MAXFILESIZE ;
+    uareaobj.UFDT[i]->ptrinode->FileSize = MAXFILESIZE;
+    uareaobj.UFDT[i]->ptrinode->ActualFileSize = 0;
+    uareaobj.UFDT[i]->ptrinode->FileType = REGULARFILE;
+    uareaobj.UFDT[i]->ptrinode->ReferenceCount = 1;
+    uareaobj.UFDT[i]->ptrinode->Permission = permission;
 
-    uareaobj.UFDT[i]->ptrinode->ActualFileSize = 0 ;
-    
-    uareaobj.UFDT[i]->ptrinode->FileType = REGULARFILE ;
-
-    uareaobj.UFDT[i]->ptrinode->ReferenceCount = 1 ;
-
-    uareaobj.UFDT[i]->ptrinode->Permission = permission ; 
-
-    // allocate the memory for files data (Data Block)
-
+    // Allocate memory for the file data buffer
     uareaobj.UFDT[i]->ptrinode->Buffer = (char*)malloc(MAXFILESIZE);
 
-    if(uareaobj.UFDT[i]->ptrinode->Buffer == NULL) // jr memory allocate zali nasel tr all characteristics default value la initialize kra.
+    // Roll back the file creation if buffer allocation fails
+    if(uareaobj.UFDT[i]->ptrinode->Buffer == NULL)
     {
         free(uareaobj.UFDT[i]);
         uareaobj.UFDT[i] = NULL;
 
+        // Reset the inode to its free state
         strcpy(temp->FileName, "\0");
         temp->FileSize = 0;
         temp->ActualFileSize = 0;
         temp->FileType = 0;
         temp->ReferenceCount = 0;
         temp->Permission = 0;
-        temp->Buffer = NULL ;
+        temp->Buffer = NULL;
 
         return ERR_INSUFFICIENT_SPACE;
     }
 
+    // Update the number of available inodes
     superobj.FreeInodes--;
 
-    return i ;              // returning fd (UFDT index)
+    return i;              // Return the file descriptor
 }
 
 
@@ -653,18 +657,22 @@ int CreateFile(
 
 void LsFile()
 {
-    PINODE temp = head ;
+    PINODE temp = head;
 
     printf("---------------------------------------------------------------------\n");
     printf("----------------- Marvellous CVFS Files Information ------------------\n");
     printf("---------------------------------------------------------------------\n");
 
+    // Traverse the inode list to display all existing files
     while(temp != NULL)
     {
+        // Display the file name if the inode represents a valid file
         if(temp->FileType != 0)
         {
-            printf("%s\n",temp->FileName);
+            printf("%s\n", temp->FileName);
         }
+
+        // Move to the next inode
         temp = temp->next;
     }
 }
@@ -682,13 +690,12 @@ void LsFile()
 
 void LsFile_All()
 {
-    PINODE temp = head ;
-    int iCount = 0 ;
-    int file_permission = 0 ;
+    PINODE temp = head;
+    int iCount = 0;
+    int file_permission = 0;
 
     char filetype[20] = {'\0'};
     char permission[4] = {'\0'};
-
 
     printf("---------------------------------------------------------------------\n");
     printf("----------------- Marvellous CVFS Files Information ------------------\n");
@@ -703,24 +710,30 @@ void LsFile_All()
         "Permission");
     printf("---------------------------------------------------------------------\n");
 
+    // Traverse the inode list to display information about all existing files
     while(temp != NULL)
     {
+        // Skip unused inodes
         if(strlen(temp->FileName) == 0)
         {
-            temp = temp->next ;
-            continue; 
+            temp = temp->next;
+            continue;
         }
+
+        // Determine the type of the current file
         if(temp->FileType == REGULARFILE)
         {
-            strcpy(filetype , "Regular");
+            strcpy(filetype, "Regular");
         }
         else
         {
-            strcpy(filetype , "Special");
+            strcpy(filetype, "Special");
         }
-        
-        file_permission = temp->Permission ;
 
+        // Get the permission value of the current file
+        file_permission = temp->Permission;
+
+        // Convert read permission into 'r'
         if((file_permission & READ) == READ)
         {
             permission[0] = 'r';
@@ -729,7 +742,8 @@ void LsFile_All()
         {
             permission[0] = '-';
         }
-        
+
+        // Convert write permission into 'w'
         if((file_permission & WRITE) == WRITE)
         {
             permission[1] = 'w';
@@ -739,6 +753,7 @@ void LsFile_All()
             permission[1] = '-';
         }
 
+        // Convert execute permission into 'x'
         if((file_permission & EXECUTE) == EXECUTE)
         {
             permission[2] = 'x';
@@ -748,26 +763,28 @@ void LsFile_All()
             permission[2] = '-';
         }
 
+        // Terminate the permission string
         permission[3] = '\0';
 
-
+        // Display the current file information
         printf("%-20s %-10d %-10d %-12s %-12s\n",
-       temp->FileName,
-       temp->InodeNumber,
-       temp->ActualFileSize,
-       filetype,
-       permission);
+            temp->FileName,
+            temp->InodeNumber,
+            temp->ActualFileSize,
+            filetype,
+            permission);
 
-       iCount++;
+        // Increment the total file count
+        iCount++;
 
-       temp = temp->next ;
+        // Move to the next inode
+        temp = temp->next;
     }
-    
-    printf("---------------------------------------------------------------------\n");
-    printf("Total Files : %d\n" , iCount);
-    printf("Free Inodes : %d\n",superobj.FreeInodes);
-    printf("---------------------------------------------------------------------\n");
 
+    printf("---------------------------------------------------------------------\n");
+    printf("Total Files : %d\n", iCount);
+    printf("Free Inodes : %d\n", superobj.FreeInodes);
+    printf("---------------------------------------------------------------------\n");
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -782,38 +799,38 @@ void LsFile_All()
 ////////////////////////////////////////////////////////////////////////////////////
 
 int stat_file(
-                char name[]                 // name of file
+                char name[]                 // Name of file
             )
 {
-    PINODE temp = NULL ;
-    int Permission = 0 ;
-    int Type = 0 ;
+    PINODE temp = NULL;
+    int Permission = 0;
+    int Type = 0;
 
+    // Check whether the requested file exists
     if(IsFileExists(name) == false)
     {
         return ERR_FILE_NOT_EXISTS;
     }
 
-    temp = head ;
+    temp = head;
 
+    // Search the inode list for the requested file
     while(temp != NULL)
     {
-        if(strcmp(temp->FileName , name) == 0)
+        if(strcmp(temp->FileName, name) == 0)
         {
             printf("---------------------------------------------------------------------\n");
             printf("------------------ Statistical Information of File ------------------\n");
             printf("---------------------------------------------------------------------\n");
 
-            printf("File Name : %s\n",temp->FileName);
+            // Display basic file information
+            printf("File Name : %s\n", temp->FileName);
+            printf("Inode Number : %d\n", temp->InodeNumber);
+            printf("File Size : %d\n", temp->FileSize);
+            printf("Actual File Size : %d\n", temp->ActualFileSize);
+            printf("Reference Count : %d\n", temp->ReferenceCount);
 
-            printf("Inode Number : %d\n",temp->InodeNumber);
-            
-            printf("File Size : %d\n",temp->FileSize);
-            
-            printf("Actual File Size : %d\n",temp->ActualFileSize);
-
-            printf("Reference Count : %d\n",temp->ReferenceCount);
-
+            // Retrieve and display the file permissions
             Permission = temp->Permission;
 
             if((Permission & READ) == READ)
@@ -833,7 +850,8 @@ int stat_file(
 
             printf("\n");
 
-            Type = temp->FileType ;
+            // Retrieve and display the file type
+            Type = temp->FileType;
 
             if(Type == REGULARFILE)
             {
@@ -845,15 +863,16 @@ int stat_file(
             }
 
             printf("---------------------------------------------------------------------\n");
-            
+
+            // Stop searching after finding the requested file
             break;
         }
 
-        temp = temp->next ;
+        // Move to the next inode
+        temp = temp->next;
     }
 
     return EXECUTE_SUCCESS;
-
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -868,61 +887,56 @@ int stat_file(
 ////////////////////////////////////////////////////////////////////////////////////
 
 int unlink_file(
-                    char name[]         // name of file
+                    char name[]         // Name of file
                 )
 {
+    PINODE temp = NULL;
 
-    PINODE temp = NULL ;
-    
+    // Check whether the requested file exists
     if(IsFileExists(name) == false)
     {
-        return ERR_FILE_NOT_EXISTS ;
+        return ERR_FILE_NOT_EXISTS;
     }
 
     temp = head;
 
-    // Travel the inode list to find filename
-
+    // Traverse the inode list to find the requested file
     while(temp != NULL)
     {
-        if(strcmp(temp->FileName , name) == 0)
+        if(strcmp(temp->FileName, name) == 0)
         {
+            // A file can be deleted only when it is not currently open
             if(temp->ReferenceCount == 0)
             {
-                // FileName is a character array, so we write '\0' at index 0 to make the string empty.
-                
+                // Reset the inode to its free state
                 temp->FileName[0] = '\0';
+                temp->FileSize = 0;
+                temp->ActualFileSize = 0;
+                temp->FileType = 0;
+                temp->Permission = 0;
 
-                temp->FileSize = 0 ;
-                
-                temp->ActualFileSize = 0 ;
-
-                temp->FileType = 0 ;
-
-                temp->Permission = 0 ;
-                
+                // Release the memory allocated for file data
                 free(temp->Buffer);
-
                 temp->Buffer = NULL;
 
-                superobj.FreeInodes++;              // increase the free inode count
-            
-                break;      // IMPORTANT
+                // Make the inode available for future file creation
+                superobj.FreeInodes++;
+
+                break;
             }
             else
             {
-                return ERR_PERMISSION_DENIED ;
+                // Prevent deletion while the file is open
+                return ERR_PERMISSION_DENIED;
             }
-        }// End of if
+        }
 
-        temp = temp->next ;
-
-    } // End of for
+        // Move to the next inode
+        temp = temp->next;
+    }
 
     return EXECUTE_SUCCESS;
-
-}// End of unlink_file 
-
+}
 
 /////////////////////////////////////////////////////////////////////////////////////
 //
@@ -940,11 +954,13 @@ int write_file(int fd, char *arr, int size)
     int iRet = 0;
     PINODE temp = NULL;
 
+    // Validate the file descriptor
     if(fd < 0 || fd >= MAXOPENFILES)
     {
         return ERR_INVALID_PARAMETER;
     }
 
+    // Check whether the file is currently open
     if(uareaobj.UFDT[fd] == NULL)
     {
         return ERR_INVALID_PARAMETER;
@@ -952,33 +968,28 @@ int write_file(int fd, char *arr, int size)
 
     temp = uareaobj.UFDT[fd]->ptrinode;
 
-    // Check WRITE permission
+    // Verify WRITE permission for the file
     if((temp->Permission & WRITE) != WRITE)
     {
         return ERR_PERMISSION_DENIED;
     }
 
-    // Check available space
+    // Check whether sufficient space is available in the file buffer
     if((MAXFILESIZE - uareaobj.UFDT[fd]->WriteOffset) < size)
     {
         return ERR_INSUFFICIENT_SPACE;
     }
 
-    // Write data into buffer
-    strncpy(
-        temp->Buffer + uareaobj.UFDT[fd]->WriteOffset,
-        arr,
-        size
-    );
+    // Copy data into the file buffer at the current write offset
+    strncpy(temp->Buffer + uareaobj.UFDT[fd]->WriteOffset, arr, size);
 
-    // Move write offset
-    uareaobj.UFDT[fd]->WriteOffset =
-        uareaobj.UFDT[fd]->WriteOffset + size;
+    // Advance the write offset by the number of bytes written
+    uareaobj.UFDT[fd]->WriteOffset = uareaobj.UFDT[fd]->WriteOffset + size;
 
-    // Calculate new end position
+    // Get the new write position
     iRet = uareaobj.UFDT[fd]->WriteOffset;
 
-    // Update actual file size only if new end is greater
+    // Update actual file size when data extends the end of the file
     if(iRet > temp->ActualFileSize)
     {
         temp->ActualFileSize = iRet;
@@ -1004,19 +1015,19 @@ int read_file(int fd, char *arr, int size)
     int remainingData = 0;
     PINODE temp = NULL;
 
-    // Validate file descriptor
+    // Validate the file descriptor
     if(fd < 0 || fd >= MAXOPENFILES)
     {
         return ERR_INVALID_PARAMETER;
     }
 
-    // Check whether file is opened
+    // Check whether the file is currently open
     if(uareaobj.UFDT[fd] == NULL)
     {
         return ERR_FILE_NOT_EXISTS;
     }
 
-    // Validate size
+    // Validate the requested read size
     if(size < 0)
     {
         return ERR_INVALID_PARAMETER;
@@ -1024,35 +1035,34 @@ int read_file(int fd, char *arr, int size)
 
     temp = uareaobj.UFDT[fd]->ptrinode;
 
-    // Check READ permission
+    // Verify READ permission for the file
     if((temp->Permission & READ) != READ)
     {
         return ERR_PERMISSION_DENIED;
     }
 
-    // Check whether read offset is at or beyond EOF
+    // Check whether the read offset has reached the end of the file
     if(uareaobj.UFDT[fd]->ReadOffset >= temp->ActualFileSize)
     {
         return 0;
     }
 
-    // Calculate remaining data
+    // Calculate the amount of data remaining from the current read offset
     remainingData = temp->ActualFileSize - uareaobj.UFDT[fd]->ReadOffset;
 
-    // If requested size is greater than remaining data,
-    // read only the available data
+    // Limit the read size to the available file data
     if(size > remainingData)
     {
         size = remainingData;
     }
 
-    // Copy data from file buffer
-    strncpy(arr, temp->Buffer + uareaobj.UFDT[fd]->ReadOffset, size );
+    // Copy data from the file buffer into the output buffer
+    strncpy(arr , temp->Buffer + uareaobj.UFDT[fd]->ReadOffset, size);
 
-    // Add string terminator
+    // Terminate the output string
     arr[size] = '\0';
 
-    // Move read offset
+    // Advance the read offset by the number of bytes read
     uareaobj.UFDT[fd]->ReadOffset = uareaobj.UFDT[fd]->ReadOffset + size;
 
     iRet = size;
@@ -1069,24 +1079,24 @@ int read_file(int fd, char *arr, int size)
 //  Date          :     15/09/2026
 //
 /////////////////////////////////////////////////////////////////////////////////////
-int openFile(char name[] , int mode)
+int openFile(char name[], int mode)
 {
     PINODE temp = NULL;
     int i = 0;
 
-    // Check for invalid mode
+    // Validate the requested access mode
     if(mode < READ || mode > (READ + WRITE))
     {
         return ERR_INVALID_PARAMETER;
     }
 
-    // Check whether file exists
+    // Check whether the requested file exists
     if(IsFileExists(name) == false)
     {
         return ERR_FILE_NOT_EXISTS;
     }
 
-    // Search for the inode of the file
+    // Search the inode list for the requested file
     temp = head;
 
     while(temp != NULL)
@@ -1096,16 +1106,17 @@ int openFile(char name[] , int mode)
             break;
         }
 
+        // Move to the next inode
         temp = temp->next;
     }
 
-    // Check whether requested mode is permitted
+    // Verify whether the requested access mode is permitted
     if((temp->Permission & mode) != mode)
     {
         return ERR_PERMISSION_DENIED;
     }
 
-    // Search for empty UFDT entry
+    // Search the UFDT for a free file descriptor entry
     for(i = 3; i < MAXOPENFILES; i++)
     {
         if(uareaobj.UFDT[i] == NULL)
@@ -1114,35 +1125,34 @@ int openFile(char name[] , int mode)
         }
     }
 
-    // No free UFDT entry
+    // Check whether a free UFDT entry is available
     if(i == MAXOPENFILES)
     {
         return ERR_MAX_FILES_OPEN;
     }
 
-    // Allocate memory for FileTable
+    // Allocate memory for the file table
     uareaobj.UFDT[i] = (PFILETABLE)malloc(sizeof(FILETABLE));
 
-    // Check memory allocation
+    // Check whether file table memory was allocated successfully
     if(uareaobj.UFDT[i] == NULL)
     {
         return ERR_INSUFFICIENT_SPACE;
     }
 
-    // Initialize FileTable
+    // Initialise the file table
     uareaobj.UFDT[i]->ReadOffset = 0;
     uareaobj.UFDT[i]->WriteOffset = 0;
     uareaobj.UFDT[i]->Mode = mode;
 
-    // Connect FileTable with Inode
+    // Link the file table with the corresponding inode
     uareaobj.UFDT[i]->ptrinode = temp;
 
-    // Increase reference count
+    // Increment the reference count for the opened file
     temp->ReferenceCount++;
 
-    // Return file descriptor
+    // Return the allocated file descriptor
     return i;
-
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -1157,21 +1167,27 @@ int openFile(char name[] , int mode)
 /////////////////////////////////////////////////////////////////////////////////////
 int closeFile(int fd)
 {
+    // Validate the file descriptor
     if(fd < 0 || fd >= MAXOPENFILES)
     {
-        return ERR_INVALID_PARAMETER ;
+        return ERR_INVALID_PARAMETER;
     }
 
+    // Check whether the file descriptor is currently in use
     if(uareaobj.UFDT[fd] != NULL)
     {
-        uareaobj.UFDT[fd]->ptrinode->ReferenceCount--; 
+        // Decrease the reference count of the associated inode
+        uareaobj.UFDT[fd]->ptrinode->ReferenceCount--;
+
+        // Release the memory allocated for the file table
         free(uareaobj.UFDT[fd]);
 
-        uareaobj.UFDT[fd] = NULL ;
+        // Mark the UFDT entry as available
+        uareaobj.UFDT[fd] = NULL;
     }
     else
     {
-        return ERR_FILE_NOT_EXISTS ;
+        return ERR_FILE_NOT_EXISTS;
     }
 
     return EXECUTE_SUCCESS;
@@ -1194,7 +1210,7 @@ void DeallocateResources()
     PINODE temp = NULL;
     PINODE next = NULL;
 
-    // Free FileTable structures
+    // Release all allocated FileTable structures
     for(i = 0; i < MAXOPENFILES; i++)
     {
         if(uareaobj.UFDT[i] != NULL)
@@ -1204,23 +1220,29 @@ void DeallocateResources()
         }
     }
 
-    // Free inode buffers and inode structures
+    // Traverse the inode list and release file buffers and inode structures
     temp = head;
 
     while(temp != NULL)
     {
+        // Store the next inode before releasing the current inode
         next = temp->next;
 
+        // Release the memory allocated for file data
         if(temp->Buffer != NULL)
         {
             free(temp->Buffer);
             temp->Buffer = NULL;
         }
 
+        // Release the current inode
         free(temp);
+
+        // Move to the next inode
         temp = next;
     }
 
+    // Reset the inode list
     head = NULL;
 }
 
@@ -1241,27 +1263,31 @@ int lseekFile(int fileDescriptor, int offset, int whence, int offsetType)
     int currentOffset = 0;
     int newOffset = 0;
 
+    // Validate the file descriptor
     if(fileDescriptor < 0 || fileDescriptor >= MAXOPENFILES)
     {
         return ERR_INVALID_PARAMETER;
     }
 
+    // Check whether the file descriptor is currently in use
     if(uareaobj.UFDT[fileDescriptor] == NULL)
     {
         return ERR_FILE_NOT_EXISTS;
     }
 
+    // Validate the reference position
     if(whence < START || whence > END)
     {
         return ERR_INVALID_PARAMETER;
     }
 
+    // Validate the offset type
     if(offsetType != READ && offsetType != WRITE)
     {
         return ERR_INVALID_PARAMETER;
     }
 
-    // Get current offset
+    // Get the current read or write offset
     if(offsetType == READ)
     {
         currentOffset = uareaobj.UFDT[fileDescriptor]->ReadOffset;
@@ -1271,7 +1297,7 @@ int lseekFile(int fileDescriptor, int offset, int whence, int offsetType)
         currentOffset = uareaobj.UFDT[fileDescriptor]->WriteOffset;
     }
 
-    // Calculate new offset
+    // Calculate the new offset based on the specified reference position
     if(whence == START)
     {
         newOffset = offset;
@@ -1286,13 +1312,13 @@ int lseekFile(int fileDescriptor, int offset, int whence, int offsetType)
             uareaobj.UFDT[fileDescriptor]->ptrinode->ActualFileSize + offset;
     }
 
-    // Offset cannot be negative
+    // Prevent the offset from becoming negative
     if(newOffset < 0)
     {
         return ERR_INVALID_PARAMETER;
     }
 
-    // Update required offset
+    // Update the selected read or write offset
     if(offsetType == READ)
     {
         uareaobj.UFDT[fileDescriptor]->ReadOffset = newOffset;
@@ -1317,50 +1343,59 @@ int lseekFile(int fileDescriptor, int offset, int whence, int offsetType)
 /////////////////////////////////////////////////////////////////////////////////////
 int renameFile(char oldName[], char newName[])
 {
-    PINODE temp = NULL ;
+    PINODE temp = NULL;
 
-    if((strlen(oldName) <= 0 || strlen(oldName) >= 20) || (strlen(newName) <= 0 || strlen(newName) >= 20))
+    // Validate the old and new file names
+    if((strlen(oldName) <= 0 || strlen(oldName) >= 20) ||
+       (strlen(newName) <= 0 || strlen(newName) >= 20))
     {
-        return ERR_INVALID_PARAMETER ;
+        return ERR_INVALID_PARAMETER;
     }
 
-    temp = head ;
+    temp = head;
 
+    // Check whether the new file name is already in use
     while(temp != NULL)
     {
-        if(strcmp(temp->FileName , newName) == 0)
+        if(strcmp(temp->FileName, newName) == 0)
         {
             break;
         }
 
-        temp = temp->next ;
-    }
-
-    if(temp != NULL)
-    {
-        return ERR_FILE_ALREADY_EXISTS ;
-    }
-
-    temp = head ;
-
-    while(temp != NULL)
-    {
-        if(strcmp(temp->FileName , oldName) == 0)
-        {
-            break;
-        }
-
+        // Move to the next inode
         temp = temp->next;
     }
 
-    if(temp == NULL)
+    // Prevent renaming if the new name already exists
+    if(temp != NULL)
     {
-        return ERR_FILE_NOT_EXISTS ;
+        return ERR_FILE_ALREADY_EXISTS;
     }
 
-    strcpy(temp->FileName , newName);
+    temp = head;
 
-    return EXECUTE_SUCCESS ;
+    // Search the inode list for the file to be renamed
+    while(temp != NULL)
+    {
+        if(strcmp(temp->FileName, oldName) == 0)
+        {
+            break;
+        }
+
+        // Move to the next inode
+        temp = temp->next;
+    }
+
+    // Check whether the old file was found
+    if(temp == NULL)
+    {
+        return ERR_FILE_NOT_EXISTS;
+    }
+
+    // Update the file name in the corresponding inode
+    strcpy(temp->FileName, newName);
+
+    return EXECUTE_SUCCESS;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -1381,13 +1416,13 @@ int truncateFile(char FileName[], int Size)
 
     temp = head;
 
-    // Validate size
+    // Validate the requested file size
     if(Size < 0)
     {
         return ERR_INVALID_SIZE;
     }
 
-    // Find the inode
+    // Search the inode list for the requested file
     while(temp != NULL)
     {
         if(strcmp(temp->FileName, FileName) == 0)
@@ -1395,31 +1430,32 @@ int truncateFile(char FileName[], int Size)
             break;
         }
 
+        // Move to the next inode
         temp = temp->next;
     }
 
-    // File does not exist
+    // Check whether the requested file exists
     if(temp == NULL)
     {
         return ERR_FILE_NOT_EXISTS;
     }
 
-    // Cannot increase file size
+    // Prevent increasing the file size using truncate
     if(Size > temp->ActualFileSize)
     {
         return ERR_INVALID_SIZE;
     }
 
-    // Check WRITE permission
+    // Verify WRITE permission for the file
     if((temp->Permission & WRITE) != WRITE)
     {
         return ERR_PERMISSION_DENIED;
     }
 
-    // Set new file size
+    // Update the actual file size
     temp->ActualFileSize = Size;
 
-    // Adjust offsets of all opened file descriptors
+    // Adjust offsets of all open file descriptors associated with this inode
     for(i = 0; i < MAXOPENFILES; i++)
     {
         if(uareaobj.UFDT[i] != NULL && uareaobj.UFDT[i]->ptrinode == temp)
@@ -1455,9 +1491,11 @@ int IsNumber(char str[])
 {
     int i = 0;
 
+    // Check whether the input string is empty
     if(str[0] == '\0')
         return 0;
 
+    // Check whether every character is a numeric digit
     while(str[i] != '\0')
     {
         if(str[i] < '0' || str[i] > '9')
@@ -1466,6 +1504,7 @@ int IsNumber(char str[])
         i++;
     }
 
+    // Return true when the string contains only numeric characters
     return 1;
 }
 
@@ -1482,12 +1521,15 @@ int IsNumber(char str[])
 /////////////////////////////////////////////////////////////////////////////////////
 bool IsValidFileName(char name[])
 {
+    // Check whether the file name is empty
     if(name[0] == '\0')
         return false;
 
+    // Check whether the file name exceeds the maximum allowed length
     if(strlen(name) >= 20)
         return false;
 
+    // File name satisfies the required validation rules
     return true;
 }
 
@@ -1499,21 +1541,23 @@ bool IsValidFileName(char name[])
 
 int main()
 {
-    // input command
+    // Input command buffer
     char str[80] = {'\0'};
-    
+
     // Tokenised command
     char Command[5][20] = {{'\0'}};
-    
-    // used to store user input data for write function
+
+    // Buffer used to store data entered for the write operation
     char InputBufferr[MAXFILESIZE] = {'\0'};
 
-    int iRet = 0  ;                         // to store tokens
-    int iCount = 0 ;
-    int iSize = 0 ;
-    
-    char *EmptyBuffer = NULL ;              // for reading the data
+    int iRet = 0;
+    int iCount = 0;
+    int iSize = 0;
 
+    // Buffer used to store data returned by the read operation
+    char *EmptyBuffer = NULL;
+
+    // Initialise CVFS auxiliary data structures
     iRet = StartAuxillaryDataInitialisation();
 
     if(iRet == ERR_INSUFFICIENT_SPACE)
@@ -1526,75 +1570,81 @@ int main()
     printf("---------------------------------------------------------------------\n");
     printf("--------------- Marvellous CVFS started Successfully ----------------\n");
     printf("---------------------------------------------------------------------\n");
-    
 
-    // Infinite Listening Shell
+    // Start the command-line shell
     while(1)
     {
-        strcpy(str , "");
+        strcpy(str, "");
 
         printf("\nMarvellous CVFS : > ");
-        fgets(str , sizeof(str) , stdin);
+        fgets(str, sizeof(str), stdin);
 
-        // %19s read only 19 characters and add \0 at the end automatically
-        iCount = sscanf(str , "%19s %19s %19s %19s %19s",Command[0] , Command[1] , Command[2] , Command[3] , Command[4] );   
+        // Tokenise the user command and its arguments
+        iCount = sscanf(str, "%19s %19s %19s %19s %19s", Command[0] ,Command[1] ,Command[2] ,Command[3] ,Command[4]);
 
+        // Process commands that require no arguments
         if(iCount == 1)
         {
-            // Marvellous CVFS : > exit
-           if(strcmp(Command[0],"exit") == 0)
+            // exit
+            if(strcmp(Command[0], "exit") == 0)
             {
                 printf("Marvellous CVFS : Deallocating all resources...\n");
 
+                // Release all dynamically allocated resources
                 DeallocateResources();
 
                 printf("Marvellous CVFS : All resources deallocated successfully\n");
 
                 break;
             }
-            // Marvellous CVFS : > help
-           else if(strcmp(Command[0] , "help") == 0)
-           {
+
+            // help
+            else if(strcmp(Command[0], "help") == 0)
+            {
                 DisplayHelp();
-           }
+            }
 
-            // Marvellous CVFS : > clear
-           else if(strcmp(Command[0] , "clear") == 0)
-           {
-                 #ifdef _WIN32                   
+            // clear
+            else if(strcmp(Command[0], "clear") == 0)
+            {
+                #ifdef _WIN32
                     system("cls");
-
-                #else 
+                #else
                     system("clear");
-
                 #endif
-           }
-           // Marvellous CVFS : > ls
-           else if(strcmp(Command[0] , "ls") == 0)
-           {
+            }
+
+            // ls
+            else if(strcmp(Command[0], "ls") == 0)
+            {
                 LsFile();
-           }
-           else
-           {
+            }
+
+            else
+            {
                 printf("Command not found\n");
                 printf("Please refer help option to get more information\n");
                 printf("Please refer manual page of command using man\n");
-           }
+            }
         }
+
+        // Process commands that require one argument
         else if(iCount == 2)
         {
-            // Marvellous CVFS : > man open
-            if(strcmp(Command[0] , "man") == 0)
+            // man command
+            if(strcmp(Command[0], "man") == 0)
             {
                 ManPageDisplay(Command[1]);
             }
-            // Marvellous CVFS : > ls -a
-            else if((strcmp(Command[0] , "ls") == 0) && strcmp(Command[1] , "-a") == 0)
+
+            // ls -a
+            else if((strcmp(Command[0], "ls") == 0) && (strcmp(Command[1], "-a") == 0))
             {
                 LsFile_All();
             }
-            // Marvellous CVFS : > stat Ganesh.txt
-            else if(strcmp(Command[0] , "stat") == 0)
+
+            // stat filename
+            else if(strcmp(Command[0], "stat") == 0)
             {
                 iRet = stat_file(Command[1]);
 
@@ -1603,8 +1653,9 @@ int main()
                     printf("Error : File not exist\n");
                 }
             }
-            // Marvellous CVFS : > unlink Ganesh.txt
-            else if(strcmp(Command[0] , "unlink") == 0)
+
+            // unlink filename
+            else if(strcmp(Command[0], "unlink") == 0)
             {
                 iRet = unlink_file(Command[1]);
 
@@ -1621,44 +1672,51 @@ int main()
                     printf("File unlinked successfully\n");
                 }
             }
-            // Marvellous CVFS : > write 1         1 -> fd
-            else if(strcmp(Command[0] , "write") == 0)
+
+            // write fd
+            else if(strcmp(Command[0], "write") == 0)
             {
+                // Validate the file descriptor input
                 if(IsNumber(Command[1]) == 0)
                 {
-                    printf("Error : Invalid Number \n");
+                    printf("Error : Invalid Number\n");
                     continue;
                 }
 
+                // Validate the file descriptor range
                 if(atoi(Command[1]) < 3 || atoi(Command[1]) >= MAXOPENFILES)
                 {
                     printf("Error : Invalid File Descriptor\n");
                     continue;
                 }
 
-                printf("Enter the data that you want to write the file \n");
-                fgets(InputBufferr , MAXFILESIZE , stdin);      // the fgets add \n at the end 
+                printf("Enter the data that you want to write the file\n");
+
+                // Read data to be written into the file
+                fgets(InputBufferr, MAXFILESIZE, stdin);
 
                 iSize = strlen(InputBufferr);
 
+                // Remove the newline character added by fgets()
                 if(iSize > 0 && InputBufferr[iSize - 1] == '\n')
                 {
                     InputBufferr[iSize - 1] = '\0';
                     iSize--;
                 }
 
+                // Prevent writing empty data
                 if(iSize == 0)
                 {
                     printf("Error : Data cannot be empty\n");
                     continue;
                 }
 
-                iRet = write_file(atoi(Command[1]) , InputBufferr , iSize);
+                // Perform the write operation
+                iRet = write_file( atoi(Command[1]), InputBufferr, iSize);
 
                 if(iRet == ERR_INVALID_PARAMETER)
                 {
                     printf("Error : Invalid Parameter\n");
-
                     printf("Please read man page for more information\n");
                 }
                 else if(iRet == ERR_FILE_NOT_EXISTS)
@@ -1667,7 +1725,7 @@ int main()
                 }
                 else if(iRet == ERR_PERMISSION_DENIED)
                 {
-                    printf("Error : There is no permsiion to write the data \n");
+                    printf("Error : There is no permission to write the data\n");
                 }
                 else if(iRet == ERR_INSUFFICIENT_SPACE)
                 {
@@ -1678,21 +1736,25 @@ int main()
                     printf("%d bytes gets successfully written into the file\n",iRet);
                 }
             }
-               // close fd  
+
+            // close fd
             else if(strcmp(Command[0], "close") == 0)
             {
+                // Validate the file descriptor input
                 if(IsNumber(Command[1]) == 0)
                 {
-                    printf("Error : Invalid Number \n");
-                    continue; 
+                    printf("Error : Invalid Number\n");
+                    continue;
                 }
 
+                // Validate the file descriptor range
                 if(atoi(Command[1]) < 3 || atoi(Command[1]) >= MAXOPENFILES)
                 {
                     printf("Error : Invalid File Descriptor\n");
                     continue;
                 }
 
+                // Close the specified file descriptor
                 iRet = closeFile(atoi(Command[1]));
 
                 if(iRet == ERR_INVALID_PARAMETER)
@@ -1708,33 +1770,37 @@ int main()
                     printf("File closed successfully\n");
                 }
             }
+
             else
             {
                 printf("Command not found\n");
                 printf("Please refer help option to get more information\n");
                 printf("Please refer manual page of command using man\n");
             }
-
         }
-        
+
+        // Process commands that require two arguments
         else if(iCount == 3)
         {
-            // Marvellous CVFS : > creat Ganesh.txt 3
-            if(strcmp(Command[0] , "creat") == 0)
+            // creat filename permission
+            if(strcmp(Command[0], "creat") == 0)
             {
+                // Validate the permission input
                 if(IsNumber(Command[2]) == 0)
                 {
-                    printf("Error : Invalid Number \n");
+                    printf("Error : Invalid Number\n");
                     continue;
                 }
 
+                // Validate the file name
                 if(IsValidFileName(Command[1]) == false)
                 {
                     printf("Error : Invalid file name\n");
                     continue;
                 }
 
-                iRet = CreateFile(Command[1] , atoi(Command[2]));               
+                // Create the requested file
+                iRet = CreateFile(Command[1],atoi(Command[2]));
 
                 if(iRet == ERR_NO_INODES)
                 {
@@ -1751,7 +1817,7 @@ int main()
                 {
                     printf("Error : Unable to create new file\n");
                     printf("Because the file name is already present\n");
-                    printf("Please use ls command to checks names of all files\n");
+                    printf("Please use ls command to check names of all files\n");
                 }
                 else if(iRet == ERR_MAX_FILES_OPEN)
                 {
@@ -1763,24 +1829,26 @@ int main()
                 {
                     printf("File successfully created with fd : %d\n",iRet);
                 }
-                
             }
-            // Marvellous CVFS : > read 3 10
+
+            // read fd size
             else if(strcmp(Command[0], "read") == 0)
             {
+                // Validate numeric arguments
                 if((IsNumber(Command[1]) == 0) || (IsNumber(Command[2]) == 0))
                 {
-                    printf("Error : Invalid Number \n");
+                    printf("Error : Invalid Number\n");
                     continue;
                 }
 
+                // Validate the file descriptor
                 if(atoi(Command[1]) < 3 || atoi(Command[1]) >= MAXOPENFILES)
                 {
                     printf("Error : Invalid File Descriptor\n");
                     continue;
                 }
 
-
+                // Validate the requested read size
                 iSize = atoi(Command[2]);
 
                 if(iSize <= 0 || iSize > MAXFILESIZE)
@@ -1789,6 +1857,7 @@ int main()
                     continue;
                 }
 
+                // Allocate memory for the data to be read
                 EmptyBuffer = (char *)malloc(iSize + 1);
 
                 if(EmptyBuffer == NULL)
@@ -1797,6 +1866,7 @@ int main()
                 }
                 else
                 {
+                    // Perform the read operation
                     iRet = read_file(atoi(Command[1]), EmptyBuffer, iSize);
 
                     if(iRet == ERR_INVALID_PARAMETER)
@@ -1829,7 +1899,7 @@ int main()
                         EmptyBuffer[iRet] = '\0';
 
                         printf("Read operation is successful\n");
-                        printf("Data from file is : \n");
+                        printf("Data from file is :\n");
                         printf("%s\n", EmptyBuffer);
 
                         free(EmptyBuffer);
@@ -1837,17 +1907,19 @@ int main()
                     }
                 }
             }
-            // open Demo.txt 3
-            else if(strcmp(Command[0] , "open") == 0)
+
+            // open filename mode
+            else if(strcmp(Command[0], "open") == 0)
             {
+                // Validate the mode input
                 if(IsNumber(Command[2]) == 0)
                 {
-                    printf("Error : Invalid Number \n");
+                    printf("Error : Invalid Number\n");
                     continue;
                 }
 
-                //                filename      mode
-                iRet = openFile(Command[1] , atoi(Command[2]));
+                // Open the requested file
+                iRet = openFile(Command[1], atoi(Command[2]));
 
                 if(iRet == ERR_INVALID_PARAMETER)
                 {
@@ -1878,10 +1950,12 @@ int main()
                     printf("File opened successfully with fd : %d\n",iRet);
                 }
             }
-            // rename oldname newname
+
+            // rename oldName newName
             else if(strcmp(Command[0], "rename") == 0)
             {
-                iRet = renameFile(Command[1], Command[2]);
+                // Rename the requested file
+                iRet = renameFile(Command[1],Command[2]);
 
                 if(iRet == ERR_INVALID_PARAMETER)
                 {
@@ -1900,16 +1974,19 @@ int main()
                     printf("File renamed successfully\n");
                 }
             }
-            // truncate filename newsize
+
+            // truncate filename newSize
             else if(strcmp(Command[0], "truncate") == 0)
             {
+                // Validate the size input
                 if(IsNumber(Command[2]) == 0)
                 {
-                    printf("Error : Invalid Number \n");
+                    printf("Error : Invalid Number\n");
                     continue;
                 }
 
-                iRet = truncateFile(Command[1], atoi(Command[2]));
+                // Perform the truncate operation
+                iRet = truncateFile(Command[1],atoi(Command[2]));
 
                 if(iRet == EXECUTE_SUCCESS)
                 {
@@ -1928,6 +2005,7 @@ int main()
                     printf("Error : Write permission denied\n");
                 }
             }
+
             else
             {
                 printf("Command not found\n");
@@ -1935,16 +2013,21 @@ int main()
                 printf("Please refer manual page of command using man\n");
             }
         }
+
+        // Process commands that require four arguments
         else if(iCount == 5)
-        {   // lseek fd offset position offset_type 
+        {
+            // lseek fd offset position offsetType
             if(strcmp(Command[0], "lseek") == 0)
             {
-                if((IsNumber(Command[1])) == 0 || (IsNumber(Command[2])) == 0)
+                // Validate numeric arguments
+                if((IsNumber(Command[1]) == 0) || (IsNumber(Command[2]) == 0))
                 {
-                    printf("Error : Invalid Number \n");
+                    printf("Error : Invalid Number\n");
                     continue;
                 }
 
+                // Validate the file descriptor
                 if(atoi(Command[1]) < 3 || atoi(Command[1]) >= MAXOPENFILES)
                 {
                     printf("Error : Invalid File Descriptor\n");
@@ -1954,7 +2037,7 @@ int main()
                 int whence = -1;
                 int offsetType = -1;
 
-                // Check whence
+                // Convert the whence argument into its corresponding constant
                 if(strcmp(Command[3], "start") == 0)
                 {
                     whence = START;
@@ -1972,7 +2055,7 @@ int main()
                     printf("Error : Invalid whence\n");
                 }
 
-                // Check offset type
+                // Convert the offset type into its corresponding constant
                 if(strcmp(Command[4], "read") == 0)
                 {
                     offsetType = READ;
@@ -1986,15 +2069,10 @@ int main()
                     printf("Error : Invalid offset type\n");
                 }
 
-                // Call lseek only when both parameters are valid
+                // Execute lseek only when both arguments are valid
                 if(whence != -1 && offsetType != -1)
                 {
-                    iRet = lseekFile(
-                                atoi(Command[1]),
-                                atoi(Command[2]),
-                                whence,
-                                offsetType
-                            );
+                    iRet = lseekFile(atoi(Command[1]), atoi(Command[2]), whence, offsetType);
 
                     if(iRet == ERR_INVALID_PARAMETER)
                     {
@@ -2012,14 +2090,15 @@ int main()
                 }
             }
         }
-        
+
+        // Handle commands with invalid syntax or argument count
         else
         {
             printf("Command not found\n");
             printf("Please refer help option to get more information\n");
             printf("Please refer manual page of command using man\n");
         }
-    } // end of while
+    }
 
-    return 0 ;
-} // end of main
+    return 0;
+}
