@@ -1471,6 +1471,28 @@ int IsNumber(char str[])
 
 /////////////////////////////////////////////////////////////////////////////////////
 //
+//  Function Name :     IsValidFileName()
+//  Description   :     It is used to check whether the given file name is valid.
+//  Input         :     String
+//  Output        :     True if file name is valid
+//                      False if file name is invalid
+//  Author        :     Pranav Avinash Narkhede
+//  Date          :     17/09/2026
+//
+/////////////////////////////////////////////////////////////////////////////////////
+bool IsValidFileName(char name[])
+{
+    if(name[0] == '\0')
+        return false;
+
+    if(strlen(name) >= 20)
+        return false;
+
+    return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+//
 //  Entry Point Function of the CVFS Project
 //
 ////////////////////////////////////////////////////////////////////////////////////
@@ -1608,12 +1630,30 @@ int main()
                     continue;
                 }
 
+                if(atoi(Command[1]) < 3 || atoi(Command[1]) >= MAXOPENFILES)
+                {
+                    printf("Error : Invalid File Descriptor\n");
+                    continue;
+                }
+
                 printf("Enter the data that you want to write the file \n");
-                fgets(InputBufferr , MAXFILESIZE , stdin);
+                fgets(InputBufferr , MAXFILESIZE , stdin);      // the fgets add \n at the end 
 
                 iSize = strlen(InputBufferr);
 
-                iRet = write_file(atoi(Command[1]) , InputBufferr , iSize-1);
+                if(iSize > 0 && InputBufferr[iSize - 1] == '\n')
+                {
+                    InputBufferr[iSize - 1] = '\0';
+                    iSize--;
+                }
+
+                if(iSize == 0)
+                {
+                    printf("Error : Data cannot be empty\n");
+                    continue;
+                }
+
+                iRet = write_file(atoi(Command[1]) , InputBufferr , iSize);
 
                 if(iRet == ERR_INVALID_PARAMETER)
                 {
@@ -1647,6 +1687,12 @@ int main()
                     continue; 
                 }
 
+                if(atoi(Command[1]) < 3 || atoi(Command[1]) >= MAXOPENFILES)
+                {
+                    printf("Error : Invalid File Descriptor\n");
+                    continue;
+                }
+
                 iRet = closeFile(atoi(Command[1]));
 
                 if(iRet == ERR_INVALID_PARAMETER)
@@ -1676,10 +1722,15 @@ int main()
             // Marvellous CVFS : > creat Ganesh.txt 3
             if(strcmp(Command[0] , "creat") == 0)
             {
-
                 if(IsNumber(Command[2]) == 0)
                 {
                     printf("Error : Invalid Number \n");
+                    continue;
+                }
+
+                if(IsValidFileName(Command[1]) == false)
+                {
+                    printf("Error : Invalid file name\n");
                     continue;
                 }
 
@@ -1723,9 +1774,16 @@ int main()
                     continue;
                 }
 
+                if(atoi(Command[1]) < 3 || atoi(Command[1]) >= MAXOPENFILES)
+                {
+                    printf("Error : Invalid File Descriptor\n");
+                    continue;
+                }
+
+
                 iSize = atoi(Command[2]);
 
-                if(iSize < 0 || iSize > MAXFILESIZE)
+                if(iSize <= 0 || iSize > MAXFILESIZE)
                 {
                     printf("Error : Invalid file size\n");
                     continue;
@@ -1884,6 +1942,12 @@ int main()
                 if((IsNumber(Command[1])) == 0 || (IsNumber(Command[2])) == 0)
                 {
                     printf("Error : Invalid Number \n");
+                    continue;
+                }
+
+                if(atoi(Command[1]) < 3 || atoi(Command[1]) >= MAXOPENFILES)
+                {
+                    printf("Error : Invalid File Descriptor\n");
                     continue;
                 }
 
