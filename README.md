@@ -187,6 +187,8 @@ CVFS/
 │
 ├── CVFS.c
 ├── README.md
+├── DOCUMENTATION.md
+├── TESTING.md
 └── .gitignore
 ```
 
