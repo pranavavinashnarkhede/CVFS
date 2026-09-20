@@ -1,40 +1,115 @@
-# Customised Virtual File System (CVFS)
+# CVFS Documentation
 
-## 1. Project Name
+## 1. Overview
 
-**Customised Virtual File System (CVFS)**
+CVFS (Customised Virtual File System) is an in-memory file system implemented in C.
 
-## 2. Technology
+It provides a custom command-line shell for performing basic file operations and demonstrates concepts such as Inode, File Table, UAREA, UFDT, file descriptors, permissions, offsets, reference counting, and dynamic memory management.
 
-**C Programming**
+---
 
-## 3. Project Overview
+## 2. Commands
 
-CVFS is a custom implementation of a **Virtual File System (VFS)** that simulates the basic functionality of a Linux-like file system.
+| Command | Syntax | Description |
+|---|---|---|
+| `help` | `help` | Displays available commands |
+| `man` | `man` | Displays command documentation |
+| `clear` | `clear` | Clears the terminal |
+| `creat` | `creat <name> <permission>` | Creates a new file |
+| `open` | `open <name> <mode>` | Opens an existing file |
+| `close` | `close <fd>` | Closes an opened file |
+| `ls` | `ls` | Lists existing files |
+| `ls -a` | `ls -a` | Displays detailed file information |
+| `stat` | `stat <name>` | Displays file information |
+| `write` | `write <fd>` | Writes data into a file |
+| `read` | `read <fd> <size>` | Reads data from a file |
+| `rename` | `rename <old> <new>` | Renames a file |
+| `truncate` | `truncate <name> <size>` | Changes the logical file size |
+| `lseek` | `lseek <fd> <offset> <whence> <type>` | Changes file offset |
+| `unlink` | `unlink <name>` | Deletes a file |
+| `exit` | `exit` | Terminates CVFS |
 
-The project provides a **custom command-line shell** through which users can perform various file-related operations.
+---
 
-It is designed to provide practical understanding of **file system concepts, system programming, memory management, and operating system internals**.
+## 3. File Permissions
 
-## 4. Main Features
+CVFS uses three basic permission values:
 
-- Custom command-line shell
-- File creation
-- File reading
-- File writing
-- File deletion
-- File listing
-- File information
-- File permissions
-- File descriptor management
-- Inode management
-- Dynamic memory management
+| Value | Permission |
+|---:|---|
+| `1` | Read |
+| `2` | Write |
+| `4` | Execute |
 
-## 5. Data Structures Used
+Permissions can be combined:
 
-### Inode
+| Value | Permission |
+|---:|---|
+| `0` | No permission |
+| `1` | Read |
+| `2` | Write |
+| `3` | Read + Write |
+| `4` | Execute |
+| `5` | Read + Execute |
+| `6` | Write + Execute |
+| `7` | Read + Write + Execute |
 
-The Inode stores information about a file, such as:
+Example:
+
+```text
+creat Demo.txt 3
+```
+
+creates a file with Read + Write permission.
+
+---
+
+## 4. File Open Modes
+
+| Mode | Description |
+|---:|---|
+| `1` | Read |
+| `2` | Write |
+| `3` | Read + Write |
+
+Example:
+
+```text
+open Demo.txt 3
+```
+
+---
+
+## 5. File Descriptor
+
+A file descriptor identifies an opened file.
+
+User file descriptors are allocated from:
+
+```text
+3 - 19
+```
+
+Example:
+
+```text
+open Demo.txt 3
+```
+
+If the command returns FD `3`, that FD can be used with:
+
+```text
+read 3 10
+write 3
+close 3
+lseek 3 ...
+```
+
+---
+
+## 6. Inode
+
+The Inode stores information about a file:
 
 - File name
 - Inode number
@@ -42,194 +117,269 @@ The Inode stores information about a file, such as:
 - Actual file size
 - File type
 - Reference count
-- File permissions
+- Permission
 - Data buffer
+- Link to the next Inode
 
-### File Table
+---
 
-The File Table stores information related to an opened file, such as:
+## 7. File Table
+
+The File Table represents an opened file and stores:
 
 - Read offset
 - Write offset
-- File mode
+- Open mode
 - Pointer to the corresponding Inode
+
+The relationship is:
+
+```text
+File Descriptor
+       |
+       v
+      UFDT
+       |
+       v
+  File Table
+       |
+       v
+     Inode
+       |
+       v
+  Data Buffer
+```
+
+---
+
+## 8. UAREA and UFDT
 
 ### UAREA
 
-UAREA stores process-related information and maintains the **User File Descriptor Table (UFDT)**.
+UAREA stores process-related information and contains the UFDT.
 
-### User File Descriptor Table (UFDT)
+### UFDT
 
-UFDT maintains references to the File Tables associated with file descriptors.
+UFDT maintains references to File Table entries for opened files.
 
-### Super Block
+---
 
-The Super Block stores information about the virtual file system, such as:
+## 9. Reference Count
 
-- Total number of Inodes
-- Number of Free Inodes
+Each Inode maintains a `ReferenceCount`.
 
-## 6. Available Commands
-
-| Command | Description |
-|---|---|
-| `help` | Displays available commands |
-| `man <command>` | Displays information about a command |
-| `clear` | Clears the terminal |
-| `creat <name> <permission>` | Creates a new file |
-| `ls` | Lists existing files |
-| `ls -a` | Displays details of all files |
-| `stat <name>` | Displays information about a specific file |
-| `write <fd>` | Writes data into a file |
-| `read <fd> <size>` | Reads data from a file |
-| `unlink <name>` | Deletes a file |
-| `exit` | Terminates CVFS |
-
-## 7. File Permissions
-
-CVFS supports the following permission values:
-
-| Value | Permission |
-|---|---|
-| `1` | Read |
-| `2` | Write |
-| `3` | Read + Write |
-
-### Example
+Opening a file increases the reference count:
 
 ```text
-creat Demo.txt 3
+open → ReferenceCount++
 ```
 
-This creates `Demo.txt` with **Read + Write** permission.
+Closing a file decreases it:
 
-## 8. How to Run
+```text
+close → ReferenceCount--
+```
 
-### Compile
+A file can be deleted using `unlink` only when its reference count is zero.
 
-Using GCC:
+---
+
+## 10. Read and Write Offsets
+
+CVFS maintains separate offsets:
+
+```text
+ReadOffset
+WriteOffset
+```
+
+The read offset determines where the next read starts.
+
+The write offset determines where the next write starts.
+
+---
+
+## 11. lseek
+
+`lseek` changes the file offset.
+
+### Whence Values
+
+| Value | Meaning |
+|---:|---|
+| `0` | Start of file |
+| `1` | Current position |
+| `2` | End of file |
+
+Example:
+
+```text
+lseek 3 5 0 1
+```
+
+This changes the selected offset to 5 positions from the start.
+
+---
+
+## 12. truncate
+
+`truncate` changes the logical size of a file.
+
+Example:
+
+```text
+truncate Demo.txt 5
+```
+
+If the file contains:
+
+```text
+Hello CVFS
+```
+
+the logical file size becomes 5.
+
+---
+
+## 13. rename
+
+`rename` changes the name of an existing file.
+
+Example:
+
+```text
+rename Demo.txt Notes.txt
+```
+
+The file contents and Inode remain associated with the renamed file.
+
+---
+
+## 14. unlink
+
+`unlink` removes an existing file.
+
+Example:
+
+```text
+unlink Notes.txt
+```
+
+The file can be removed only when it is not currently opened.
+
+---
+
+## 15. Memory Management
+
+CVFS uses dynamic memory allocation for file-system structures and file buffers.
+
+Memory is allocated using:
+
+```c
+malloc()
+```
+
+and released using:
+
+```c
+free()
+```
+
+Resources are also released before program termination.
+
+---
+
+## 16. Input Validation
+
+CVFS validates important inputs such as:
+
+- File names
+- Permissions
+- Open modes
+- File descriptors
+- Read size
+- Truncate size
+- `lseek` parameters
+- File existence
+- Duplicate file names
+
+---
+
+## 17. Basic Workflow
+
+```text
+Create File
+     |
+     v
+   Inode
+     |
+     v
+    Open
+     |
+     v
+File Descriptor
+     |
+     v
+Read / Write / lseek / stat
+     |
+     v
+   Close
+     |
+     v
+  Unlink
+```
+
+---
+
+## 18. Example Session
+
+```text
+CVFS : > creat Demo.txt 3
+File successfully created with fd : 3
+
+CVFS : > write 3
+Enter the data that you want to write to the file:
+Hello CVFS
+
+CVFS : > read 3 10
+Read operation is successful
+Data from file is:
+Hello CVFS
+
+CVFS : > stat Demo.txt
+
+CVFS : > close 3
+
+CVFS : > unlink Demo.txt
+
+CVFS : > exit
+Thank you for using CVFS
+```
+
+---
+
+## 19. Compilation
+
+Compile using GCC:
 
 ```bash
 gcc CVFS.c -o CVFS
 ```
 
-### Run
-
-#### Linux/macOS
+Run on Linux/macOS:
 
 ```bash
 ./CVFS
 ```
 
-#### Windows
+Run on Windows:
 
 ```bash
 CVFS.exe
 ```
 
-## 9. Example
+---
 
-```text
-Marvellous CVFS : > creat Demo.txt 3
-
-File successfully created with fd : 3
-
-Marvellous CVFS : > ls
-
-Demo.txt
-
-Marvellous CVFS : > write 3
-
-Enter the data that you want to write the file
-Hello CVFS
-
-Marvellous CVFS : > read 3 10
-
-Read operation is successful
-Data from file is :
-Hello CVFS
-
-Marvellous CVFS : > stat Demo.txt
-
-Marvellous CVFS : > unlink Demo.txt
-
-Marvellous CVFS : > exit
-
-Thank you for using Marvellous CVFS
-```
-
-## 10. Project Architecture
-
-```text
-                     +----------------+
-                     |  Custom Shell  |
-                     +-------+--------+
-                             |
-                             v
-                     +----------------+
-                     | Command Parser |
-                     +-------+--------+
-                             |
-                             v
-                     +----------------+
-                     | File Operations|
-                     +-------+--------+
-                             |
-          +----------+-------+-------+----------+
-          |          |       |       |          |
-          v          v       v       v          v
-       Create      Read    Write   Delete      List
-                             |
-                             v
-                           Stat
-                             |
-                             v
-                         +-------+
-                         |  UFDT |
-                         +---+---+
-                             |
-                             v
-                       +-----------+
-                       | File Table|
-                       +-----+-----+
-                             |
-                             v
-                         +-------+
-                         | Inode |
-                         +---+---+
-                             |
-                             v
-                       +-------------+
-                       | Data Buffer |
-                       +-------------+
-```
-
-## 11. Learning Outcomes
-
-This project helped in understanding:
-
-- Linux file system concepts
-- Operating system internals
-- Inodes and file tables
-- UAREA and UFDT
-- File descriptors
-- File permissions
-- Dynamic memory allocation
-- Linked lists
-- Command-line shell design
-- System programming in C
-- Low-level programming concepts
-
-## 12. Future Improvements
-
-- Add more file system commands
-- Implement additional file operations
-- Add persistent file storage
-- Improve command handling
-- Improve memory management
-- Add more error handling
-- Increase file system capacity
-
-## 13. Author
+## Author
 
 **Pranav Avinash Narkhede**
